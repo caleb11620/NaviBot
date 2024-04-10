@@ -1,38 +1,19 @@
+
+
 //----------------------------LIBRARY--------------------
 #include <Adafruit_MotorShield.h> //Library for motorshield
 #include <Wire.h> //Library for I2C connection
 #include <NewPing.h> 
 #include "I2Cdev.h"
-#include "MPU6050_6Axis_MotionApps20.h"
+#include <MPU6050_light.h>
 #include <PID_v1.h>
 
 
 //--------------------------GYRO----------------------------
 
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-  #include "Wire.h"
-#endif
-//Default I2C (IIC) address is 0x68
-//AD0 low = 0x68
-//AD0 high = 0x69
 
-MPU6050 mpu;
-#define OUTPUT_READABLE_YAWPITCHROLL
-
-// MPU control/status vars
-bool dmpReady = false;  // set true if DMP init was successful
-uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
-uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
-uint16_t fifoCount;     // count of all bytes currently in FIFO
-uint8_t fifoBuffer[64]; // FIFO storage buffer
-
-// orientation/motion vars
-Quaternion q;           // [w, x, y, z]         quaternion container
-VectorFloat gravity;    // [x, y, z]            gravity vector
-float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-
-float angle_initial, angle_final, angle_goal;
-float rawYaw, yaw, turnAngle;
+MPU6050 mpu(Wire);
+int target = 0; //tracking angles for turning
 
 
 //---------------------------ULTRASONIC SENSORS---------------------------
@@ -100,54 +81,15 @@ void setup(){
 
   //----------------GYRO INITIALIZATION----------------
 
-  #if I2CDEV-IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    Wire.begin();
-    Wire.setClock(400000);
-  #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-    FastWire::setup(400, true);
-  #endif
-
-  //Initialize device
-  Serial.println(F("Initializiing I2C devices..."));
-  mpu.initialize();
-
-  //Verify connection
-  Serial.println(F("Testing device connections..."));
-  Serial.println(mpu.testConnection() ? F("MPU6050 connection successful"):  F("MPU6050 connection failed"));
-
-  //Load and configure DMP
-  devStatus = mpu.dmpInitialize();
-
-  //Supply your own gyro offsets here
-  // mpu.setXGyroOffset(220);
-  //mpu.setYGyroOffset(76);
-  //mpu.setZGyroOffset(-85);
-
-  if (devStatus == 0) {
-    //Calibration Time: generate offsets and calibrate our MPU6050
-    mpu.CalibrateGyro(6);
-    //turn on the DMP, now that it's ready
-    Serial.println(F("Enabling DMP..."));
-    mpu.setDMPEnabled(true);
-
-    //set our DMP Ready flag so the main loop() knows it's okay to use it
-    Serial.println(F("DMP ready! Waiting for first interrupt..."));
-    dmpReady = true;
-
-    //get expected DMP packet size for later comparison
-    packetSize = mpu.dmpGetFIFOPacketSize();
-  } else {
-    //ERROR!
-    // 1 = initial memory load failed
-    // 2 = DMP configuration updates failed
-    // (if it's going to break, usually the code will be 1)
-    Serial.print(F("DMP Initialization failed (code "));
-    Serial.print(devStatus);
-    Serial.println(F(")"));
-  }
-
-  //if programming failed, do nothing
-  if(!dmpReady) return;
+  Wire.begin();
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(5000);
+  mpu.calcOffsets(); // gyro and accelero
+  Serial.println("Done!\n");  
 
   //-----------------------MOTOR INITIALIZATION----------------
   
@@ -357,41 +299,62 @@ int rightWallFollow(bool left, bool center, bool right) {
   return FWD;
 }
 
-void turn(float angle_turn) {
-  angle_initial = mpuGetYaw();
-  angle_final = angle_initial;
-  angle_goal = angle_initial + angle_turn;
-  if (angle_goal > 360) {
-    angle_goal = angle_goal - 360;
+void getAngles(){
+
+  mpu.update();
+  if((millis()-timer)>500){ // print data every 500ms
+	Serial.println(mpu.getAngleZ());
+	timer = millis();  
   }
-  if (angle_goal < 0) {
-    angle_goal = angle_goal + 360;
-  }
-  while(angle_final > angle_goal+2 or angle_final < angle_goal-2) {
-    angle_final = mpuGetYaw();
-    //Serial.print("Goal: ");
-    //Serial.print(angle_goal);
-    //Serial.print("\t");
-    //Serial.print("Current Angle: ");
-    //Serial.print(angle_final);
-    //Serial.println("Right");
-    angle_final = mpuGetYaw();
-  } 
 }
 
-float mpuGetYaw() {
-  //read a packet from FIFO
-  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    mpu.dmpGetQuaternion(&q, fifoBuffer);
-    mpu.dmpGetGravity(&gravity, &q);
-    mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-    rawYaw = (ypr[0] * 180/M_PI);
-    if (rawYaw < 0) {
-      rawYaw = rawYaw * -1;
-      yaw = (180 - rawYaw) + 180;
-    } else {
-      yaw = rawYaw;
-    }
+void L_angle(int target){
+
+  Serial.println(mpu.getAngleZ());
+  Serial.println("moving LEFT");
+  leftMotor->run(BACKWARD);
+  rightMotor->run(FORWARD);
+  leftMotor->setSpeed(80);
+  rightMotor->setSpeed(80);
+
+  if (mpu.getAngleZ() >= target){
+    Serial.print("stop");
+    leftMotor->run(RELEASE); //stops the Motors
+    rightMotor->run(RELEASE);
+    leftMotor->fullOff();
+    rightMotor->fullOff();
   }
-  return yaw;
+   mpu.update(); 
 }
+
+void R_angle(int target){
+    Serial.println(mpu.getAngleZ());
+    Serial.println("moving left");
+    leftMotor->run(FORWARD);
+    rightMotor->run(BACKWARD);
+    leftMotor->setSpeed(70);
+    rightMotor->setSpeed(70);
+
+  
+  if (mpu.getAngleZ() <= target){
+      Serial.print("stop");
+      leftMotor->run(RELEASE); //stops the Motors
+      rightMotor->run(RELEASE);
+      leftMotor->fullOff();
+      rightMotor->fullOff();
+    }
+  mpu.update(); 
+}
+
+void drivestraight(int target){
+  
+  
+  if (mpu.getAngleZ() >= target){
+    leftMotor->run(RELEASE);
+    rightMotor->run(RELEASE);
+    leftMotor->setSpeed(70);
+    rightMotor->setSpeed(70);
+  }
+}
+
+
