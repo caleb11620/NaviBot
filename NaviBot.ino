@@ -388,7 +388,7 @@ void LeftWallFollow() {
     //PID Code for Parallel Travel
     computePID();
     motorL->setSpeed(leftSpeed + lOut);
-    motorR->setSpeed(rightSpeed - rOut);
+    motorR->setSpeed(rightSpeed - lOut);
   }
 }
 
@@ -410,14 +410,18 @@ void RightWallFollow() {
   } else {
     MotorCommand(FWD, 0);
     computePID();
-    motorL->setSpeed(leftSpeed - lOut);
+    motorL->setSpeed(leftSpeed - rOut);
     motorR->setSpeed(rightSpeed + rOut);
   }
 }
 
 
 void computePID() {
-  middleDist = (cmLeft + cmRight) / 2;
+  if (NavMethod == 0) {
+    middleDist = cmLeft;
+  } else {
+    middleDist = cmRight;
+  }
   leftPid.Compute();
   rightPid.Compute();
 }
