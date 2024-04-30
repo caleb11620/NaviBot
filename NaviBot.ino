@@ -232,18 +232,22 @@ void loop() {
 
 
 void scan() {
+  // Number of times to ping each sensor, may change
+  int iterations = 5;
+  
+  // Try uncommenting delays if it doesn't work
+  int leftDuration = leftSensor.ping_median(iterations);
+  // delay(50);
+  int centerDuration = centerSensor.ping_median(iterations);
+  // delay(50);
+  int rightDuration = rightSensor.ping_median(iterations);
+  // delay(50);
 
-  float pingLeft, pingCenter, pingRight;
-  
-  pingLeft = leftSensor.ping();
-  pingCenter = centerSensor.ping();
-  pingRight = rightSensor.ping();
-  
-  cmLeft = leftSensor.convert_cm(pingLeft);
+  cmLeft = leftSensor.convert_cm(leftDuration);
   if(cmLeft == 0) { cmLeft = 200;}
-  cmCenter = centerSensor.convert_cm(pingCenter);
+  cmCenter = centerSensor.convert_cm(centerDuration);
   if(cmCenter == 0) { cmCenter = 200;}
-  cmRight = rightSensor.convert_cm(pingRight);
+  cmRight = rightSensor.convert_cm(rightDuration);
   if(cmRight == 0) { cmRight = 200;}
   //Gets boolean value for navigation function
   if (cmLeft <= SideThreshold) {
