@@ -1,4 +1,5 @@
 //----------------------------LIBRARY--------------------
+#include <PID_v1.h> // PID Library
 #include <Adafruit_MotorShield.h> //Library for motorshield
 #include <Wire.h> //Library for I2C connection
 #include <NewPing.h> 
@@ -52,10 +53,10 @@ bool left = false;
 bool center = false;
 bool right = false;
 
-float SideThreshold = 10;
-float FrontThreshold = 11;
+double SideThreshold = 10;
+double FrontThreshold = 11;
 
-float cmLeft, cmCenter, cmRight;
+double cmLeft, cmCenter, cmRight;
 
 //---------------------MOTOR DRIVER---------------------
 
@@ -84,17 +85,16 @@ int leftTurn = 82;
 
 //-------------------------------PID------------------------------
 
-const float Kp = 5;
-const float Ki = 0;
-const float Kd = 4;
+const double Kp = 5;
+const double Ki = 0;
+const double Kd = 4;
 
-const float setpoint = 3;
+double lOut = leftSpeed, rOut = rightSpeed;
+double middleDist;
 
-float error;
-float derivative;
-float prev_error = 0;
-float integral = 0;
-float output;
+// PID myPid(Input, Output, Setpoint, Kp, Ki, Kd, Controller)
+PID leftPid(&cmLeft, &lOut, &middleDist, Kp, Ki, Kd, DIRECT);
+PID rightPid(&cmRight, &rOut, &middleDist, Kp, Ki, Kd, DIRECT);
 
 int NavMethod = 3;
 
@@ -172,8 +172,11 @@ void setup(){
   //At this point, everything is initialized.
 
   //----------------------------PID INITIALIZATION----------------
-  
-
+  leftPid.SetMode(AUTOMATIC);
+  rightPid.SetMode(AUTOMATIC);
+  // Output Limits
+  // leftPid.SetOutputLimits(,);
+  // rightPid.SetOutputLimits(,);
 
   //---------------------5 SECOND COUNTOWN--------------------------
   pinMode(LED_BUILTIN, OUTPUT);
@@ -383,11 +386,9 @@ void LeftWallFollow() {
   } else {
     MotorCommand(FWD, 0);
     //PID Code for Parallel Travel
-    computePID(cmLeft);
-    if (output < 10) {
-    motorL->setSpeed(leftSpeed + output);
-    motorR->setSpeed(rightSpeed - output);
-    }
+    computePID();
+    motorL->setSpeed(leftSpeed + lOut);
+    motorR->setSpeed(rightSpeed - rOut);
   }
 }
 
@@ -408,19 +409,15 @@ void RightWallFollow() {
     MotorCommand(UTURN, 180);
   } else {
     MotorCommand(FWD, 0);
-    computePID(cmRight);
-    motorL->setSpeed(leftSpeed - output);
-    motorR->setSpeed(rightSpeed + output);
+    computePID();
+    motorL->setSpeed(leftSpeed - lOut);
+    motorR->setSpeed(rightSpeed + rOut);
   }
 }
 
 
-void computePID(int cmdist) {
-  error = setpoint - cmdist;
-  integral = integral + error;
-  derivative = error - prev_error;
-
-  output = Kp * error + Ki*integral + Kd * derivative;
-  prev_error = error;
-  Serial.println(output);
+void computePID() {
+  middleDist = (cmLeft + cmRight) / 2;
+  leftPid.Compute();
+  rightPid.Compute();
 }
