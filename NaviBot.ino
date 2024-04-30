@@ -274,59 +274,54 @@ void scan() {
 }
 
 
+// Helper function to set speeds
+void setMotorSpeeds(int speedL, int speedR) {
+  motorL->setSpeed(speedL);
+  motorR->setSpeed(speedR);
+}
+
+// Helper function to run motors
+void runMotors(uint8_t stateL, uint8_t stateR) {
+  motorL->run(stateL);
+  motorR->run(stateR);
+}
+
 void MotorCommand(int n, int turnAngle) {
-  // 1 - FORWARD
-  // 2 - BACKWARD
-  // 3 - LEFT
-  // 4 - RIGHT
-  // 5 - STOP
-  // 6 - UTURN
   switch (n) {
-    case 1:
-    motorL->setSpeed(leftSpeed);
-    motorR->setSpeed(rightSpeed); 
-    motorL->run(FORWARD);
-    motorR->run(BACKWARD);
-    break;
+    case FWD:
+      setMotorSpeeds(leftSpeed, rightSpeed);
+      runMotors(FORWARD, BACKWARD);
+      break;
 
-    case 2:
-    motorL->setSpeed(leftSpeed);
-    motorR->setSpeed(rightSpeed);
-    motorL->run(BACKWARD);
-    motorR->run(FORWARD);
-    break;
+    case BACK:
+      setMotorSpeeds(leftSpeed, rightSpeed);
+      runMotors(BACKWARD, FORWARD);
+      break;
 
-    case 3:
-    motorL->run(RELEASE);
-    motorR->run(BACKWARD);
-    motorR->setSpeed(60);
-    motorL->setSpeed(30);
-    turn(-1*turnAngle);
-    break;
+    case LEFT:
+      setMotorSpeeds(30, 60); // Example values, should be parameterized or defined
+      runMotors(RELEASE, BACKWARD);
+      turn(-1 * turnAngle);
+      break;
 
-    case 4:
-    motorL->run(FORWARD);
-    motorR->run(RELEASE);
-    motorR->setSpeed(30);
-    motorL->setSpeed(60);
-    turn(turnAngle);
-    break;
+    case RIGHT:
+      setMotorSpeeds(60, 30); // Example values, should be parameterized or defined
+      runMotors(FORWARD, RELEASE);
+      turn(turnAngle);
+      break;
 
-    case 5:
-    motorL->run(RELEASE);
-    motorR->run(RELEASE);
-    break;
+    case STOP:
+      runMotors(RELEASE, RELEASE);
+      break;
 
-    case 6: 
-    motorL->run(FORWARD);
-    motorR->run(BACKWARD);
-    motorL->setSpeed(35);
-    motorR->setSpeed(35);
-    turn(-1*turnAngle);
-    break;
+    case UTURN:
+      setMotorSpeeds(35, 35); // Example values, should be parameterized or defined
+      runMotors(FORWARD, BACKWARD);
+      turn(-1 * turnAngle);
+      break;
 
     default:
-    break;
+      break;
   }
 }
 
