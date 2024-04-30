@@ -417,11 +417,7 @@ void RightWallFollow() {
 
 
 void computePID() {
-  if (NavMethod == 0) {
-    middleDist = cmLeft;
-  } else {
-    middleDist = cmRight;
-  }
+  middleDist = 2.5;
   leftPid.Compute();
   rightPid.Compute();
 }
