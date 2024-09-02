@@ -10,7 +10,7 @@
 //--------------------------GYRO----------------------------
 
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-  #include "Wire.h"
+#include "Wire.h"
 #endif
 //Default I2C (IIC) address is 0x68
 //AD0 low = 0x68
