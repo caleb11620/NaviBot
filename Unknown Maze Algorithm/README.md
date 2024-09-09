@@ -4,10 +4,8 @@ bot a chance to map the interior of the maze.
 
 Necessary Deliverables:
 
-    1. Maze Solution Algorithm (September 15th)
-
-    2. Start point initialization and calibration (September 20th)
-
-    3. End point initialization... or correction (September 30th)
+- [ ] Maze Solution Algorithm (September 15th)
+- [ ] Start point initialization and calibration (September 20th)
+- [ ] End point initialization... or correction (September 30th)
 
 These  deliverables must be completed and functional by September 30th, 2024.
