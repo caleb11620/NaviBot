@@ -132,16 +132,7 @@ int main() {
     x = 199;
     y = 199;
     angle = 0;
-
-    for(int i = 0; i < 10; i++) {
-        MapUpdate(1,0,3,10-i,3);
-    }
-    for(int i = 0; i < 4; i++) {
-        MapUpdate(1,0,15,4-i,3);
-    }
-    for(int i = 0; i < 15; i++) {
-        MapUpdate(1,-90,4,15-i,1);
-    }
+    
     return 0;
 }
 
