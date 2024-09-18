@@ -22,9 +22,11 @@ struct Node {
     Node(int x, int y) : x(x), y(y), g(0), h(0), f(0), parent(nullptr), isObstacle(false) {}
 };
 
-Node* grid[GRID_SIZE][GRID_SIZE];
+std::vector<std::vector<Node*>> grid;
 
 void initializeGrid() {
+    grid.resize(GRID_SIZE, std::vector<Node*>(GRID_SIZE));
+
     for (int i = 0; i < GRID_SIZE; ++i) {
         for (int j = 0; j < GRID_SIZE; ++j) {
             grid[i][j] = new Node(j, i);
