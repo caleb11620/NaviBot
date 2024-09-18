@@ -55,15 +55,15 @@ bool Astar::isValid(int x, int y) {
 }
 
 int Astar::heuristic(int x1, int y1, int x2, int y2) {
-    return abs(x1 - x2) + abs(y1 - y2);
+    return std::max(abs(x1 - x2), abs(y1 - y2));
 }
 
 std::vector<Node*> Astar::getNeighbors(Node* node) {
     std::vector<Node*> neighbors;
-    int dx[] = { -1, 0, 1, 0 };
-    int dy[] = {0, 1, 0, -1};
+    int dx[] = { -1, 0, 1, 0, -1, 1, 1, -1 };
+    int dy[] = { 0, 1, 0, -1, 1, 1, -1, -1 };
 
-    for (int i{0}; i < 4; ++i) {
+    for (int i{0}; i < 8; ++i) {
         int newX = node->x + dx[i];
         int newY = node->y + dy[i];
 
