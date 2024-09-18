@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 
 // constructor
 // aWidth and aHeight init 0
@@ -54,8 +55,25 @@ bool Astar::isValid(int x, int y) {
     return (x >= 0 && x < aWidth && y >= 0 && y < aHeight && !grid[y][x]->isObstacle);
 }
 
-int Astar::heuristic(int x1, int y1, int x2, int y2) {
-    return std::max(abs(x1 - x2), abs(y1 - y2));
+float Astar::heuristic(int x1, int y1, int x2, int y2) {
+    // manhattan distance
+    //return abs(x1 - x2) + abs(y1 - y2);
+
+    // euclidean distance
+    //return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+
+    // chebyshev distance
+    //return std::max(abs(x1 - x2), abs(y1 - y2));
+
+    // octile distance
+    int dx = abs(x1 - x2);
+    int dy = abs(y1 - y2);
+    //return (dx + dy) + (std::sqrt(2) - 2) * std::min(dx, dy);
+
+    // octile distance with variable diagonal cost
+    float D = 1.0; // cost of moving straight
+    float D2 = sqrt(2); // cost of moving diagonally
+    return D * (dx + dy) + (D2 - 2 * D) * std::min(dx, dy);
 }
 
 std::vector<Node*> Astar::getNeighbors(Node* node) {
