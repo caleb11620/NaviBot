@@ -1,0 +1,307 @@
+// Gyro Library
+#include <MPU6050_light.h>
+#include "Wire.h"
+
+// IR Sensor Library
+#include <VL53L0X.h>
+#include <Wire.h>
+
+//SD Library
+#include <SPI.h>
+#include <SD.h>
+
+
+//IR Sensor Initialization
+VL53L0X LeftSensor, CenterSensor, RightSensor;
+#define LXSHUT 2
+#define CXSHUT 3
+#define RXSHUT 4
+int left,center,right;
+
+//Gyro Initialization
+MPU6050 mpu(Wire);
+float angle;
+
+//SD Initialization
+float x, y;
+const int CS = A0;
+File memoryLog;
+File Map;
+
+#define LEFT 1
+#define CENTER 2
+#define RIGHT 3
+#define PI 3.14159265
+
+//DIP Initialization
+#define SW1 8
+#define SW2 7
+#define SW3 6
+
+
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  GyroSetup(); 
+
+  IRSetup();
+
+  initializeDIP();
+
+  if (!SD.begin(CS)) {
+    Serial.println("Initialization Failure...Check wiring");
+    while(1==1);
+  }
+  Serial.println("Initialization Complete");
+
+  memoryLog = SD.open("Log.txt", FILE_WRITE);
+  Map = SD.open("map1.bin", FILE_WRITE);
+
+  initializeGrid();
+  Serial.println("Done initializing grid!");
+
+  populateMap();
+  Serial.println("Done populating grid!");
+}
+
+void loop() {
+  
+}
+
+String readDIP() {
+  int n1 = digitalRead(SW1);
+  int n2 = digitalRead(SW2);
+  int n3 = digitalRead(SW3);
+
+  String n = String(n1) + String(n2) + String(n3);
+  return n;
+}
+
+void initializeDIP() {
+  pinMode(SW1, INPUT);
+  pinMode(SW2, INPUT);
+  pinMode(SW3, INPUT);
+}
+
+void scan() {
+  //Gyro Data
+  mpu.update();
+  angle = mpu.getAngleZ();
+  Serial.print(angle);
+  Serial.print(',');
+
+  //IR Data
+  left = LeftSensor.readRangeContinuousMillimeters();
+  Serial.print(left);
+  Serial.print(',');
+//  center = LeftSensor.readRangeContinuousMillimeters();
+  right = RightSensor.readRangeContinuousMillimeters();
+  Serial.println(right);
+
+  MemoryLog();
+
+}
+
+void GyroSetup() {
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){}
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  //delay(1000);
+  // mpu.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
+  mpu.calcOffsets(); // gyro and accelerometer
+  Serial.println("Done!\n");
+}
+
+void IRSetup() {
+    //IR Sensor Setup
+  pinMode(LXSHUT, OUTPUT);
+//  pinMode(CXSHUT, OUTPUT);
+  pinMode(RXSHUT, OUTPUT);
+
+  digitalWrite(LXSHUT, HIGH);
+//  digitalWrite(CXSHUT, LOW);
+  digitalWrite(RXSHUT, LOW);
+  LeftSensor.setTimeout(500);
+  if(!LeftSensor.init()){
+    Serial.println("Failed to detect and initialize left sensor!");
+    while(1){}
+  }
+  LeftSensor.setAddress(0x20);
+//  //-----------------Center sensor initialization----------------------
+//    digitalWrite(LXSHUT, HIGH);
+//    digitalWrite(CXSHUT, HIGH);
+//    digitalWrite(RXSHUT, LOW);
+//    CenterSensor.setTimeout(500);
+//    if(!CenterSensor.init()) {
+//        Serial.println("Failed to detect and initialize center sensor!");
+//        while(1){}
+//    }
+//    CenterSensor.setAddress(0x22);
+
+
+
+  //-----------------Right sensor initialization----------------------
+    digitalWrite(LXSHUT, HIGH);
+//    digitalWrite(CXSHUT, HIGH);
+    digitalWrite(RXSHUT, HIGH);  
+    RightSensor.setTimeout(500);
+    if(!RightSensor.init()) {
+        Serial.println("Failed to detect and initialize right sensor!");
+        while(1){}
+    }
+    RightSensor.setAddress(0x24);
+
+
+    LeftSensor.startContinuous();
+//    CenterSensor.startContinuous();
+    RightSensor.startContinuous();
+    Serial.println("IR Devices Ready!");
+}
+
+//This is what writes data to the txt file.
+void MemoryLog() {
+  memoryLog = SD.open("Log.txt", FILE_WRITE);
+  memoryLog.print(angle);
+  memoryLog.print(',');
+  memoryLog.print(left);
+  memoryLog.print(',');
+//  memoryLog.print(center);
+//  memoryLog.print(',');
+  memoryLog.println(right);
+  memoryLog.close();
+}
+
+//This can calculate the file location given x,y coordinates
+int calcLoc(int x, int y) {
+  return x + (401*y);
+}
+
+//Sets 400x400 grid to 0 and sets initial position to 199,199
+void initializeGrid() {
+  if (!SD.begin(CS)) {
+    //Error indication
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(1000);
+  }
+  if (SD.exists("map1.bin")) {
+    SD.remove("map1.bin");
+  }
+  Map = SD.open("map1.bin", FILE_WRITE);
+  
+  if(Map) {
+    
+    for(int i = 0; i < 400; i++) {
+      for(int j = 0; j < 400; j++) {
+        Map.print('0');
+      }
+      Map.println();
+    }
+    Map.seek(calcLoc(199,199));
+    Map.print('1');
+    Map.close();
+  } else {
+    //Error indication
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(1000);
+  }
+}
+
+//Update cells with '1' given distance and orientation
+void UpdateCells(int distance, int orientation) {
+  float rads = (orientation / 180)*PI;
+
+  for(int i = 0; i < distance; i++) {
+    x = x + cos(rads);
+    y = y + sin(rads);
+
+    File Map = SD.open("Map.bin", FILE_WRITE);
+    if(Map) {
+      Map.seek(calcLoc(x,y));
+      Map.print('1');
+      Map.close();
+    } else {
+      //Error indication
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(1000);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(1000);
+    }
+  }
+}
+
+//Given a wall distance, the sensor, and orientation, will update map
+void WallDistance(int wall_distance, int sensor, float orientation) {
+  int prev_x = x;
+  int prev_y = y;
+
+  switch(sensor) {
+    case LEFT:
+      int left_angle = orientation-90;
+      UpdateCells(wall_distance, left_angle);
+      break;
+
+    case CENTER:
+      UpdateCells(wall_distance, orientation);
+      break;
+
+    case RIGHT:
+      int right_angle = orientation + 90;
+      UpdateCells(wall_distance, right_angle);
+      break;
+
+    default:
+      break;
+    }
+  x = prev_x;
+  y = prev_y;
+}
+
+//Update Map using previous functions
+void MapUpdate(int orientation, int leftSensor, int rightSensor) {
+  WallDistance(leftSensor, LEFT, orientation);
+//  WallDistance(centerSensor, CENTER, orientation);
+  WallDistance(rightSensor, RIGHT, orientation);
+}
+
+//Populate Map with MemoryLog data. Run this after txt file has been written. ONLY need to be run ONCE
+void populateMap() {
+  memoryLog = SD.open("Log.txt", FILE_READ);
+  float Angle;
+  int Left, Center, Right;
+  String Data;
+  while(memoryLog.available()) {
+    Data = memoryLog.readStringUntil(',');
+    Data.trim();
+    Angle = Data.toFloat();
+
+    Data = memoryLog.readStringUntil(',');
+    Data.trim();
+    Left = Data.toInt();
+
+//    Data = memoryLog.readStringUntil(',');
+//    Data.trim();
+//    Center = Data.toInt();
+
+    Data = memoryLog.readStringUntil('\n');
+    Data.trim();
+    Right = Data.toInt();
+
+    MapUpdate(Angle, Left, Right);
+    Serial.print(Angle);
+    Serial.print(',');
+    Serial.print(Left);
+    Serial.print(',');
+    Serial.print(Right);
+    Serial.println();
+    
+  }
+}
