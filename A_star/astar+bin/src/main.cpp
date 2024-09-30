@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     std::cout << "Path vector: (x,y)" << std::endl;
     for (int i = 0 ; i < path.size()-1; ++i) {
         std::cout << "(" << path[i]->x << "," << path[i]->y << ")";
-        std::cout << " -> " << "(" << path[i+1]->x << "," << path[i+1]->y << ")" << std::endl;
+        std::cout << " -> " << "(" << path[i+1]->x << "," << path[i+1]->y << ") ";
         auto [direction, angle, newHeading] = calculateDirectionAngleAndHeading(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, heading);
         heading = newHeading;
         std::cout << "Direction: " << direction << ", Angle: " << angle << ", New Heading: " << newHeading << std::endl;
@@ -73,7 +73,8 @@ int main(int argc, char **argv)
     for (int i = 0; i < solution.size()-1; ++i) {
         if (solution[i].direction == 'F' && solution[i].direction == solution[i+1].direction) {
             solution[i].distance++;
-            solution.erase(solution.begin() + i);
+            solution.erase(solution.begin() + i+1);
+            --i;
         }
     }
 
