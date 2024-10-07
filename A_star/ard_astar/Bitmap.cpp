@@ -11,27 +11,29 @@ int Bitmap::getPixel(int x, int y)
 // replace functionality with reading from sd card
 bool Bitmap::read(File &file)
 {
-  /* // C++ IMP
-    std::ifstream file(filename);
-    if (!file.is_open())
+  if (!file) {
+    Serial.println(F("Error with maze bitmap: empty"));
+    return false;
+  } 
+
+  for (int y = 0; y < MAX_HEIGHT; ++y)
+  {
+    for (int x = 0; x < MAX_WIDTH; ++x)
     {
-        std::cerr << "Error opening file for reading: " << filename << std::endl;
+      while (file.available() && !isdigit(file.peek())) {
+        file.read(); // Skip non-digit characters
+      }
+      
+      if (!file.available()) {
+        Serial.println(F("Unexpected end of file"));
         return false;
+      }
+      
+      char c = file.read();
+      data[y][x] = (c == '1');
     }
-
-    for (int y = 0; y < MAX_HEIGHT; ++y)
-    {
-        for (int x = 0; x < MAX_WIDTH; ++x)
-        {
-            char c;
-            file >> c;
-            data[y][x] = (c == '1');
-        }
-    }
-
-    file.close();
-    return true;
-    */
+  }
+  return true;
 }
 
 // replace functionality with writing to sd card
