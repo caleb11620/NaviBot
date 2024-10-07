@@ -1,1 +1,87 @@
+// Left connected between A01 and A02
+// Right connected between B01 and B02
+#include "Wire.h"
 
+int STBY = A3; //standby
+
+//Left motor
+int PWML = 10; //Speed control 
+int AIN1 = 6; //Direction
+int AIN2 = 7; //Direction
+
+//Right motor
+int PWMR = 9; //Speed control
+int BIN1 = A2; //Direction
+int BIN2 = A1; //Direction
+
+void setup(){
+
+  Serial.begin(9600);
+  Wire.begin();
+
+  pinMode(STBY, OUTPUT);
+
+  pinMode(PWML, OUTPUT);
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+
+  pinMode(PWMR, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+}
+
+void loop(){
+
+  digitalWrite(STBY, HIGH);
+
+  goForward();
+  Serial.println("moving both speed motors");
+  delay(3000); //go for 1 second
+
+  stop(); //stop
+
+  Serial.println("stop motors");
+
+  delay(3000); //hold for 1 second 
+  
+  goBackward();
+
+  delay(3000);
+
+  Serial.println("stop both motors");
+  
+  stop();
+
+  delay(3000);
+
+}
+
+
+
+void goForward(){
+  
+  digitalWrite(AIN1, HIGH);
+  digitalWrite(AIN2, LOW);
+  analogWrite(PWML, 100);
+
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMR, 100);
+}
+
+void goBackward (){
+
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, HIGH);
+  analogWrite(PWML, 100);
+
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, HIGH);
+  analogWrite(PWMR, 100);
+
+}
+
+void stop(){
+//enable standby  
+  digitalWrite(STBY, LOW); 
+}
