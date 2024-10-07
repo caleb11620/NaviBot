@@ -1,0 +1,17 @@
+#include <Encoder.h>
+
+Encoder myEnc(2, 3); // Pins 2 and 3 for A and B signals
+
+long oldPosition = 0;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  long newPosition = myEnc.read();
+  while (newPosition != oldPosition) {
+    Serial.println(newPosition);
+    oldPosition = newPosition;
+  }
+}
