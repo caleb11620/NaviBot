@@ -1,1 +1,163 @@
 
+#include <MPU6050_light.h>
+#include "Wire.h"
+
+
+int STBY = A3; //standby
+
+//Left motor
+int PWML = 10; //Speed control 
+int AIN1 = 6; //Direction
+int AIN2 = 7; //Direction
+
+//Right motor
+int PWMR = 9; //Speed control
+int BIN1 = A2; //Direction
+int BIN2 = A1; //Direction
+
+
+MPU6050 mpu(Wire);
+unsigned long timer = 0;
+int target = 0; //tracking angles for turning
+//int value; //turn the gyro to just interger
+
+void goForward (){
+
+  digitalWrite(AIN1, HIGH);
+  digitalWrite(AIN2, LOW);
+  analogWrite(PWML, 100);
+
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMR, 100);
+
+}
+
+void goBackward (){
+
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, HIGH);
+  analogWrite(PWML, 100);
+
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, HIGH);
+  analogWrite(PWMR, 100);
+}
+
+void stop(){
+  digitalWrite(STBY, LOW); 
+}
+
+
+
+void setup() {
+  Serial.begin(9600);           // set up Serial library at 9600 bps
+  Wire.begin();
+
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(5000);
+  mpu.calcOffsets(); // gyro and accelero
+  Serial.println("Done!\n");
+
+  pinMode(STBY, OUTPUT);
+
+  pinMode(PWML, OUTPUT);
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+
+  pinMode(PWMR, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+
+   
+}
+
+void loop() {
+  
+  getAngles();
+
+  L_angle(90);
+  Serial.println(mpu.getAngleZ());
+  
+ 
+}
+
+void getAngles(){
+
+  mpu.update();
+  if((millis()-timer)>500){ // print data every 500ms
+	Serial.println(mpu.getAngleZ());
+	timer = millis();  
+  }
+}
+
+void L_angle(int target){
+
+
+  Serial.println(mpu.getAngleZ());
+  Serial.println("moving LEFT");
+
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, LOW);
+  analogWrite(PWML, 0);
+
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMR, 80);
+
+  if (mpu.getAngleZ() >= target){
+    Serial.print("stop");
+    stop();
+  }
+  
+   mpu.update(); 
+}
+
+void R_angle(int target){
+
+    Serial.println(mpu.getAngleZ());
+    Serial.println("moving left");
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+    analogWrite(PWML, 0);
+
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, LOW);
+    analogWrite(PWMR, 80);
+    
+
+  
+  if (mpu.getAngleZ() <= target){
+      Serial.print("stop");
+      stop();
+    }
+  /*
+  if(mpu.getAngleZ() > target){
+    Serial.println("moving right");
+    leftMotor->run(BACKWARD);
+    rightMotor->run(FORWARD);
+    
+    }*/
+  mpu.update(); 
+}
+
+void drivestraight(int target){
+  
+  
+  if (mpu.getAngleZ() >= target){
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+    analogWrite(PWML, 100);
+
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, LOW);
+    analogWrite(PWMR, 100);
+    }
+  
+    mpu.update();
+}
+
