@@ -13,10 +13,19 @@ struct step {
 
 // Function prototypes
 MicroTuple<char, int, String> calculateDirectionAngleAndHeading(int x1, int y1, int x2, int y2, const String& currentHeading);
+void sdInit();
+
+// SD Card
+File myFile;
+File maze_bmp;
+const int sdPin = 10; // update to match connection
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Hello, from Arduino maze solver!");
+
+  // SD Card init
+  sdInit();
 
   // Initialize your bitmap and A* objects here
   Bitmap bmp;
@@ -24,7 +33,7 @@ void setup() {
 
   // You'll need to adapt the bitmap reading for Arduino
   // This might involve reading from EEPROM or SD card
-  if (bmp.read("maze.bin")) {
+  if (bmp.read(maze_bmp)) {
     Serial.println("Bitmap successfully read.");
   }
 
@@ -128,4 +137,18 @@ MicroTuple<char, int, String> calculateDirectionAngleAndHeading(int x1, int y1, 
   // This function will need significant adaptation for Arduino
   // You may need to use simpler data structures instead of std::map
   // and implement your own string comparison logic
+}
+
+// Initialization of SD card and log file
+void sdInit() {
+  Serial.print("Initializing SD Card...");
+  if(!SD.begin(sdPin)) {
+    Serial.println("Initialization Failure...Check wiring/connection");
+    while(1==1);
+  }
+  Serial.print("Initialization Complete");  
+  
+  // init files
+  myFile = SD.open("log.txt");
+  maze_bmp = SD.open("400x400maze.bin");
 }
