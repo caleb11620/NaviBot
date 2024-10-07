@@ -1,8 +1,9 @@
 #ifndef ASTAR_HPP
 #define ASTAR_HPP
 
-//#include <std::vector.h>
 #include <Cpp_Standard_Library.h>
+#include <vector>
+#include <cmath>
 
 struct Node {
     int x, y;

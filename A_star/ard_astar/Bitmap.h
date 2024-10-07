@@ -2,6 +2,7 @@
 #define BITMAP_HPP
 
 #include <Cpp_Standard_Library.h>
+#include <vector>
 //#include <std::vector.h>
 // replace fstream with sd card read/write library
 //#include <fstream>
