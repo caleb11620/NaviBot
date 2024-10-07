@@ -6,9 +6,9 @@
 #include "Astar.h"
 
 struct step {
-    int angle;
-    int distance {1};
-    char direction;
+  int angle;
+  int distance {1};
+  char direction;
 };
 
 // Function prototypes
@@ -18,6 +18,7 @@ void sdInit();
 // SD Card
 File myFile;
 File maze_bmp;
+File cropped_bmp;
 const int sdPin = 10; // update to match connection
 
 void setup() {
@@ -31,13 +32,20 @@ void setup() {
   Bitmap bmp;
   Astar astar;
 
-  // You'll need to adapt the bitmap reading for Arduino
-  // This might involve reading from EEPROM or SD card
+  // read bitmap
   if (bmp.read(maze_bmp)) {
     Serial.println("Bitmap successfully read.");
+  } else {
+    Serial.println("Error reading bitmap.");
   }
+  maze_bmp.close();
 
   bmp.removeEmptyRowsAndColumns();
+  cropped_bmp = SD.open("croppedmaze.bin", FILE_WRITE);
+  if (bmp.write(cropped_bmp)) {
+    Serial.println("cropped_bmp created");
+  }
+  cropped_bmp.close();
 
   Serial.print("Adjusted bitmap width: ");
   Serial.print(bmp.getWidth());

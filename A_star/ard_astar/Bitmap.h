@@ -36,8 +36,8 @@ class Bitmap
         std::vector<std::vector<bool>> getData() const { return data; }
 
         int getPixel(int x, int y);
-        bool read(File &filename);
-        bool write(File &filename);
+        bool read(File &file);
+        bool write(File &file);
         void invertPixel(int x, int y);
 
         std::vector<int> findEmptyRows();

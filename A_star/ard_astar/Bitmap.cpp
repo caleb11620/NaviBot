@@ -8,7 +8,9 @@ int Bitmap::getPixel(int x, int y)
     return data[y][x] ? 1 : 0;
 }
 
-// replace functionality with reading from sd card
+// Read from SD card
+// This will likely need to be changed depending on exact format
+// of the bitmap file.
 bool Bitmap::read(File &file)
 {
   if (!file) {
@@ -36,29 +38,28 @@ bool Bitmap::read(File &file)
   return true;
 }
 
-// replace functionality with writing to sd card
-bool Bitmap::write(File &filename)
+// Write to SD card
+bool Bitmap::write(File &file)
 {
-  /* // C++ IMP
-    std::ofstream file(filename);
-    if (!file.is_open())
+  if (!file) {
+    Serial.println(F("Error opening file for writing"));
+    return false;
+  }
+
+  for (int y = 0; y < intHeight; ++y)
+  {
+    for (int x = 0; x < intWidth; ++x)
     {
-        std::cerr << "Error opening file for writing: " << filename << std::endl;
+      if (!file.write(data[y][x] ? '1' : '0')) {
+        Serial.println(F("Write failed"));
         return false;
+      }
     }
-
-    for (int y = 0; y < intHeight; ++y)
-    {
-        for (int x = 0; x < intWidth; ++x)
-        {
-            file << (data[y][x] ? '1' : '0');
-        }
-        file << std::endl;
+    if (!file.println()) {
+      Serial.println(F("Failed to write newline"));
+      return false;
     }
-
-    file.close();
-    return true;
-    */
+  }
 }
 
 void Bitmap::invertPixel(int x, int y)
