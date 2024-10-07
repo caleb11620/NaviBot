@@ -204,7 +204,7 @@ void Astar::printGrid(const std::vector<Node*>& path) {
         displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : ((i == path.size() - 1) ? 'G' : '*');
     }
 
-    // Print the grid
+    // Print the grid, change to log
     /*
     std::cout << "  ";
     for (int i = 0; i < aWidth; ++i) {
@@ -214,10 +214,10 @@ void Astar::printGrid(const std::vector<Node*>& path) {
     */
 
     for (int i = 0; i < aHeight; ++i) {
-        //std::cout << std::setw(2) << i << " ";
+        //std::cout << std::setw(2) << i << " "; // change to log
         for (int j = 0; j < aWidth; ++j) {
-            std::cout << displayGrid[i][j];
+            //std::cout << displayGrid[i][j]; // change to log
         }
-        std::cout << std::endl;
+        //std::cout << std::endl; // change to log
     }
 }
