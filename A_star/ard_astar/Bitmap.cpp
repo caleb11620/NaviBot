@@ -9,7 +9,7 @@ int Bitmap::getPixel(int x, int y)
 }
 
 // replace functionality with reading from sd card
-bool Bitmap::read(const String &filename)
+bool Bitmap::read(File &file)
 {
   /* // C++ IMP
     std::ifstream file(filename);
@@ -35,7 +35,7 @@ bool Bitmap::read(const String &filename)
 }
 
 // replace functionality with writing to sd card
-bool Bitmap::write(const String &filename)
+bool Bitmap::write(File &filename)
 {
   /* // C++ IMP
     std::ofstream file(filename);

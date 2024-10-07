@@ -3,6 +3,8 @@
 
 #include <Cpp_Standard_Library.h>
 #include <vector>
+#include <SD.h>
+#include <SPI.h>
 //#include <std::vector.h>
 // replace fstream with sd card read/write library
 //#include <fstream>
@@ -34,8 +36,8 @@ class Bitmap
         std::vector<std::vector<bool>> getData() const { return data; }
 
         int getPixel(int x, int y);
-        bool read(const String &filename);
-        bool write(const String &filename);
+        bool read(File &filename);
+        bool write(File &filename);
         void invertPixel(int x, int y);
 
         std::vector<int> findEmptyRows();
