@@ -1,5 +1,7 @@
 #include <Encoder.h>
-
+//hardware connection
+//left to right 
+//C(GND),B(D3), A(D2)
 static int pinA = 2;
 static int pinB = 3;
 
