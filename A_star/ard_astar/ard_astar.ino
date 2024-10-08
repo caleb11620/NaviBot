@@ -1,6 +1,5 @@
 #include <Arduino.h>
 // Include necessary library headers
-// Note: You may need to implement or find Arduino-compatible versions of these
 #include <microTuple.h>
 #include "Bitmap.h"
 #include "Astar.h"
@@ -23,16 +22,15 @@ const int sdPin = 10; // update to match connection
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Hello, from Arduino maze solver!");
-
+  Serial.println("Running setup");
   // SD Card init
   sdInit();
 
-  // Initialize your bitmap and A* objects here
+  // Initialiaze bmp and astar
   Bitmap bmp;
   Astar astar;
 
-  // read bitmap
+  // Read bitmap from SD
   if (bmp.read(maze_bmp)) {
     Serial.println("Bitmap successfully read.");
   } else {
@@ -40,6 +38,7 @@ void setup() {
   }
   maze_bmp.close();
 
+  // Crop empty space from bitmap for readability
   bmp.removeEmptyRowsAndColumns();
   cropped_bmp = SD.open("croppedmaze.bin", FILE_WRITE);
   if (bmp.write(cropped_bmp)) {
@@ -47,11 +46,13 @@ void setup() {
   }
   cropped_bmp.close();
 
+  // Check new width and height
   Serial.print("Adjusted bitmap width: ");
   Serial.print(bmp.getWidth());
   Serial.print(" height: ");
   Serial.println(bmp.getHeight());
 
+  // Initialize grid data in A* class
   auto astardata = bmp.getData();
   astar.interpretBitmap(astardata);
 
@@ -102,10 +103,10 @@ void setup() {
     Serial.print(", New Heading: ");
     Serial.println(newHeading);
     
-    step val;
-    val.direction = direction;
-    val.angle = angle;
-    val.distance = 1;
+    step val = {angle, 1, direction};
+    //val.direction = direction;
+    //val.angle = angle;
+    //val.distance = 1;
     solution.push_back(val);
   }
 
