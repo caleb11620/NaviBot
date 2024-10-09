@@ -1,8 +1,7 @@
 //----------------------------LIBRARY--------------------
 #include <Adafruit_MotorShield.h> //Library for motorshield
 #include <Wire.h> //Library for I2C connection
-//#include <NewPing.h>
-#include <HCSR04.h> 
+#include <NewPing.h>
 #include "I2Cdev.h" 
 //#include "MPU6050.h"
 #include "math.h"
