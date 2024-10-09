@@ -3,6 +3,7 @@
 #include <microTuple.h>
 #include "Bitmap.h"
 #include "Astar.h"
+#include <map>
 
 struct step {
   int angle;
@@ -32,9 +33,9 @@ void setup() {
 
   // Read bitmap from SD
   if (bmp.read(maze_bmp)) {
-    Serial.println("Bitmap successfully read.");
+    Serial.println(F("Bitmap successfully read."));
   } else {
-    Serial.println("Error reading bitmap.");
+    Serial.println(F("Error reading bitmap."));
   }
   maze_bmp.close();
 
@@ -42,15 +43,17 @@ void setup() {
   bmp.removeEmptyRowsAndColumns();
   cropped_bmp = SD.open("croppedmaze.bin", FILE_WRITE);
   if (bmp.write(cropped_bmp)) {
-    Serial.println("cropped_bmp created");
+    Serial.println(F("cropped_bmp created"));
   }
   cropped_bmp.close();
 
   // Check new width and height
+  /*
   Serial.print("Adjusted bitmap width: ");
   Serial.print(bmp.getWidth());
   Serial.print(" height: ");
   Serial.println(bmp.getHeight());
+  */
 
   // Initialize grid data in A* class
   auto astardata = bmp.getData();
@@ -138,14 +141,59 @@ void loop() {
   // The main loop can be left empty or used for repeated tasks
 }
 
-// Implement the calculateDirectionAngleAndHeading function here
-// You may need to adapt this function to use Arduino's String instead of std::string
-// and replace std::map with a simpler data structure if memory is a concern
+// transform coordinate directions into step by step angle, direction, distance
 MicroTuple<char, int, String> calculateDirectionAngleAndHeading(int x1, int y1, int x2, int y2, const String& currentHeading) {
-  // Implementation goes here
-  // This function will need significant adaptation for Arduino
-  // You may need to use simpler data structures instead of std::map
-  // and implement your own string comparison logic
+  int dx = x2 - x1;
+  int dy = (y1 - y2);
+
+  const std::map<std::pair<int, int>, String> movements = {
+    {{0, 1}, "N"}, {{1, 1}, "NE"}, {{1, 0}, "E"}, {{1, -1}, "SE"},
+    {{0, -1}, "S"}, {{-1, -1}, "SW"}, {{-1, 0}, "W"}, {{-1, 1}, "NW"}
+  };
+
+  // Find the new heading
+  auto it = movements.find({dx, dy});
+  if (it == movements.end()) {
+    return {'X', -1, currentHeading};  // Invalid movement
+  }
+  String newHeading = it->second;
+  
+  // If the heading hasn't changed, it's a forward movement
+  if (newHeading == currentHeading) {
+    return {'F', 0, newHeading};
+  }
+  
+  // Define the angle differences between directions
+  const std::map<std::pair<String, String>, std::pair<char, int>> directionChanges = {
+    {{"N", "NE"}, {'R', 45}},  {{"N", "E"}, {'R', 90}},   {{"N", "SE"}, {'R', 135}},
+    {{"N", "S"}, {'R', 180}},  {{"N", "SW"}, {'L', 135}}, {{"N", "W"}, {'L', 90}},
+    {{"N", "NW"}, {'L', 45}},  {{"NE", "E"}, {'R', 45}},  {{"NE", "SE"}, {'R', 90}},
+    {{"NE", "S"}, {'R', 135}}, {{"NE", "SW"}, {'R', 180}},{{"NE", "W"}, {'L', 135}},
+    {{"NE", "NW"}, {'L', 90}}, {{"NE", "N"}, {'L', 45}},  {{"E", "SE"}, {'R', 45}},
+    {{"E", "S"}, {'R', 90}},   {{"E", "SW"}, {'R', 135}}, {{"E", "W"}, {'R', 180}},
+    {{"E", "NW"}, {'L', 135}}, {{"E", "N"}, {'L', 90}},   {{"E", "NE"}, {'L', 45}},
+    {{"SE", "S"}, {'R', 45}},  {{"SE", "SW"}, {'R', 90}}, {{"SE", "W"}, {'R', 135}},
+    {{"SE", "NW"}, {'R', 180}},{{"SE", "N"}, {'L', 135}}, {{"SE", "NE"}, {'L', 90}},
+    {{"SE", "E"}, {'L', 45}},  {{"S", "SW"}, {'R', 45}},  {{"S", "W"}, {'R', 90}},
+    {{"S", "NW"}, {'R', 135}}, {{"S", "N"}, {'R', 180}},  {{"S", "NE"}, {'L', 135}},
+    {{"S", "E"}, {'L', 90}},   {{"S", "SE"}, {'L', 45}},  {{"SW", "W"}, {'R', 45}},
+    {{"SW", "NW"}, {'R', 90}}, {{"SW", "N"}, {'R', 135}}, {{"SW", "NE"}, {'R', 180}},
+    {{"SW", "E"}, {'L', 135}}, {{"SW", "SE"}, {'L', 90}}, {{"SW", "S"}, {'L', 45}},
+    {{"W", "NW"}, {'R', 45}},  {{"W", "N"}, {'R', 90}},   {{"W", "NE"}, {'R', 135}},
+    {{"W", "E"}, {'R', 180}},  {{"W", "SE"}, {'L', 135}}, {{"W", "S"}, {'L', 90}},
+    {{"W", "SW"}, {'L', 45}},  {{"NW", "N"}, {'R', 45}},  {{"NW", "NE"}, {'R', 90}},
+    {{"NW", "E"}, {'R', 135}}, {{"NW", "SE"}, {'R', 180}},{{"NW", "S"}, {'L', 135}},
+    {{"NW", "SW"}, {'L', 90}}, {{"NW", "W"}, {'L', 45}}
+  };
+  
+  // Find the direction change
+  auto change = directionChanges.find({currentHeading, newHeading});
+  if (change != directionChanges.end()) {
+    return {change->second.first, change->second.second, newHeading};
+  }
+  
+  // If no change found (shouldn't happen with a complete directionChanges map)
+  return {'X', -1, newHeading};
 }
 
 // Initialization of SD card and log file
