@@ -48,6 +48,7 @@ bool left = false;
 bool center = false;
 bool right = false;
 
+float MAX_DIST = 200.0;
 float SideThreshold = 10;
 float FrontThreshold = 11; 
 float cmLeft, cmCenter, cmRight;
@@ -202,20 +203,16 @@ float getAngles(){
   
 
 void scan() {
+  // Update cmLeft, cmCenter, and cmRight
+  // If they read zero, they're actually the max distance the sensor can ping.
+  cmLeft = leftSensor.ping_cm();
+  if(cmLeft == 0) { cmLeft = MAX_DIST;}
+  cmCenter = centerSensor.ping_cm();
+  if(cmCenter == 0) { cmCenter = MAX_DIST;}
+  cmRight = rightSensor.ping_cm();
+  if(cmRight == 0) { cmRight = MAX_DIST;}
 
-  float pingLeft, pingCenter, pingRight;
-  
-  pingLeft = leftSensor.ping();
-  pingCenter = centerSensor.ping();
-  pingRight = rightSensor.ping();
-  
-  cmLeft = leftSensor.convert_cm(pingLeft);
-  if(cmLeft == 0) { cmLeft = 200;}
-  cmCenter = centerSensor.convert_cm(pingCenter);
-  if(cmCenter == 0) { cmCenter = 200;}
-  cmRight = rightSensor.convert_cm(pingRight);
-  if(cmRight == 0) { cmRight = 200;}
-  //Gets boolean value for navigation function
+  // Update boolean wall values
   if (cmLeft <= SideThreshold) {
     left = true;
   } else {
