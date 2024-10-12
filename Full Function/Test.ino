@@ -12,7 +12,7 @@ VL53L0X LeftSensor, CenterSensor, RightSensor;
 #define RXSHUT 4
 float left,center,right;
 byte leftWall, centerWall, rightWall;
-#define followDistance 6
+#define followDistance 13
 
 //Gyro Initialization
 MPU6050 mpu(Wire);
@@ -52,13 +52,15 @@ float leftStart, centerStart, rightStart;
 #define RIGHT_TURN 3
 #define STOP 4
 
-int leftSpeed = 100;
-int rightSpeed = 100;
+float leftSpeed = 60;
+float rightSpeed = 61;
 
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   Wire.begin();
+
+  pinMode(13, OUTPUT);
 
   initializeMotor();
   initializeGyro();
@@ -69,8 +71,8 @@ void setup() {
 }
 
 void loop() {
-  rotationalMap();
-  //RightWallFollow();
+  //rotationalMap();
+  RightWallFollow();
   //MemoryLog();
 }
 
@@ -84,12 +86,12 @@ void initializeMotor() {
 
 void initializeGyro() {
   byte status = mpu.begin();
-  //Serial.print("MPU6050 status: "));
-  //Serial.println(status);
+  Serial.print("MPU6050 status: ");
+  Serial.println(status);
   while(status!=0) {}
-  //Serial.println("Calculating offsets, do not move the MPU6050");
+  Serial.println("Calculating offsets, do not move the MPU6050");
   mpu.calcOffsets();
-  //Serial.println("Done!\n");
+  Serial.println("Done!\n");
 }
 
 void initializeIR() {
@@ -154,15 +156,21 @@ void scan() {
   //Serial.print(right);
   //Serial.print(',');
 
-  if(left<6) {leftWall=1;} else {leftWall=0;}
-  if(center<10) {centerWall=1;} else {centerWall=0;}
-  if(right<6) {rightWall=1;} else {rightWall=0;}
+  if(left<20) {leftWall=1;} else {leftWall=0;}
+  if(center<6) {centerWall=1;} else {centerWall=0;}
+  if(right<20) {rightWall=1;} else {rightWall=0;}
   
 }
 
 void waitForStart() {
   scan();
   while(center>4) {scan();}
+  for(int i = 0; i < 3; i++){
+    digitalWrite(13, HIGH);
+    delay(800);
+    digitalWrite(13, LOW);
+    delay(800);
+  }
 }
 
 void Motor(int command) {
@@ -171,30 +179,30 @@ void Motor(int command) {
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
-    analogWrite(PWML, leftSpeed);
+    analogWrite(PWML, round(leftSpeed));
     digitalWrite(BIN1, HIGH);
     digitalWrite(BIN2, LOW);
-    analogWrite(PWMR, rightSpeed);
+    analogWrite(PWMR, round(rightSpeed));
     break;
 
     case 2:
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
-    analogWrite(PWML, leftSpeed);
+    analogWrite(PWML, 50);
     digitalWrite(BIN1, HIGH);
     digitalWrite(BIN2, LOW);
-    analogWrite(PWMR, rightSpeed);
+    analogWrite(PWMR, 50);
     break;
 
     case 3:
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
-    analogWrite(PWML, leftSpeed);
+    analogWrite(PWML, 50);
     digitalWrite(BIN1, LOW );
     digitalWrite(BIN2, HIGH);
-    analogWrite(PWMR, rightSpeed);
+    analogWrite(PWMR, 50);
     break;
 
     case 4:
@@ -244,35 +252,38 @@ void initializeGrid() {
 
 void enterMaze() {
   scan();
-  while(center>15) {
+  while(center>5) {
     scan();
     Motor(FWD);
   }
-  delay(500);
   Motor(STOP);
   //Now we can initialize the grid and start point
   scan();
   leftStart = left;
   rightStart = right;
   centerStart = center;
-  initializeGrid();
-  turn(90, LEFT_TURN);
+  //initializeGrid();
+  turn(86, LEFT_TURN);
 }
 
 void RightWallFollow() {
   scan();
-  if(rightWall == false) {
-    turn(90, RIGHT_TURN);
-    Motor(FWD);
-    delay(20);
-    while(rightWall == false && centerWall == false) {
+  while (rightWall==0){
+  //if(rightWall==0) {
+      delay(1000);
+      turn(86, RIGHT_TURN);
       Motor(FWD);
+      delay(750);
       scan();
-    }
-  } else if (center == true && left == false) {
+      if(rightWall==0) {
+        turn(86, RIGHT_TURN);
+      }
+  } 
+  if (centerWall == 1 && leftWall == 0) {
     delay(30);
-    turn(90, LEFT_TURN);
+    turn(86, LEFT_TURN);
   } else {
+    scan();
     computePID();
     Motor(FWD);
   }
@@ -280,24 +291,36 @@ void RightWallFollow() {
 
 void turn(int turnAngle, int turnDirection) {
   mpu.update();
-  int angleGoal = round(mpu.getAngleZ()) + turnAngle;
+  int angleGoal;
+  if(turnDirection == LEFT_TURN) {
+       angleGoal = mpu.getAngleZ() + turnAngle;
+  }
+  if(turnDirection == RIGHT_TURN) {
+       angleGoal = mpu.getAngleZ() - turnAngle;
+  }
+
   if(angleGoal > 360) {
     angleGoal = angleGoal % 360;
   }
+  //Serial.print(angleGoal);
   float currAngle = mpu.getAngleZ();
-  while(abs(currAngle-angleGoal) > 2) {
+  while(abs(currAngle-angleGoal) > 3) {
+    mpu.update();
+    //Serial.println(currAngle-angleGoal);
     Motor(turnDirection);
     currAngle = mpu.getAngleZ();
   }
   Motor(STOP);
 }
 
+float lastError = 0;
+float ErrorDiff;
 void computePID() {
-  right = RightSensor.readRangeContinuousMillimeters();
-  int error = right - followDistance;
-  leftSpeed = leftSpeed + error;
-  rightSpeed = rightSpeed - error;
-
+  float error = right - followDistance;
+  ErrorDiff = error - lastError;
+  leftSpeed = leftSpeed + (error*0.08);
+  rightSpeed = rightSpeed - (error*0.08);
+  lastError = error;
 }
 
 void MemoryLog() {
