@@ -12,11 +12,16 @@ VL53L0X LeftSensor, CenterSensor, RightSensor;
 #define RXSHUT 4
 float left,center,right;
 byte leftWall, centerWall, rightWall;
-#define followDistance 13
+
+#define followDistance 10
+
+#define frontWallDistance  6
+#define sideWallDistance  20
 
 //Gyro Initialization
 MPU6050 mpu(Wire);
 float angle;
+#define RightAngleTurn 86
 
 //SD initialization 
 float x, y;
@@ -52,30 +57,40 @@ float leftStart, centerStart, rightStart;
 #define RIGHT_TURN 3
 #define STOP 4
 
-float leftSpeed = 60;
-float rightSpeed = 61;
+int leftSpeed = 60;
+int rightSpeed = 61;
+int rotationSpeed = 45;
 
+byte program = 0; 
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   Wire.begin();
 
   pinMode(13, OUTPUT);
-
-  initializeMotor();
-  initializeGyro();
-  initializeIR();
-  initializeSD();
-  waitForStart();
-  enterMaze();
+  
+  if(program==1) {
+    initializeMotor();
+    initializeGyro();
+    initializeIR();
+    initializeSD();
+    waitForStart();
+    enterMaze();
+  } else {
+    Make_A_Map();
+  }
 }
+
 
 void loop() {
-  //rotationalMap();
-  RightWallFollow();
-  //MemoryLog();
+  if (program == 1) {
+    RightWallFollow();
+  } else {
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
 }
 
+//-------------------Functions-------------------//
 void initializeMotor() {
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
@@ -146,19 +161,19 @@ void scan() {
   //Serial.print(angle);
   //Serial.print(',');
 
-  left = (LeftSensor.readRangeContinuousMillimeters()*0.1);
+  left = LeftSensor.readRangeContinuousMillimeters()*0.1;
   //Serial.print(left);
   //Serial.print(',');
-  center = (CenterSensor.readRangeContinuousMillimeters()*0.1);
+  center = CenterSensor.readRangeContinuousMillimeters()*0.1;
   //Serial.print(center);
   //Serial.print(',');
-  right = (RightSensor.readRangeContinuousMillimeters()*0.1);
+  right = RightSensor.readRangeContinuousMillimeters()*0.1;
   //Serial.print(right);
   //Serial.print(',');
-
-  if(left<20) {leftWall=1;} else {leftWall=0;}
-  if(center<6) {centerWall=1;} else {centerWall=0;}
-  if(right<20) {rightWall=1;} else {rightWall=0;}
+  
+  if(left<sideWallDistance) {leftWall=1;} else {leftWall=0;}
+  if(center<frontWallDistance) {centerWall=1;} else {centerWall=0;}
+  if(right<sideWallDistance) {rightWall=1;} else {rightWall=0;}
   
 }
 
@@ -179,30 +194,30 @@ void Motor(int command) {
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
-    analogWrite(PWML, round(leftSpeed));
+    analogWrite(PWML, leftSpeed);
     digitalWrite(BIN1, HIGH);
     digitalWrite(BIN2, LOW);
-    analogWrite(PWMR, round(rightSpeed));
+    analogWrite(PWMR, rightSpeed);
     break;
 
     case 2:
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
-    analogWrite(PWML, 50);
+    analogWrite(PWML, rotationSpeed);
     digitalWrite(BIN1, HIGH);
     digitalWrite(BIN2, LOW);
-    analogWrite(PWMR, 50);
+    analogWrite(PWMR, rotationSpeed);
     break;
 
     case 3:
     digitalWrite(STBY, HIGH);
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
-    analogWrite(PWML, 50);
+    analogWrite(PWML, rotationSpeed);
     digitalWrite(BIN1, LOW );
     digitalWrite(BIN2, HIGH);
-    analogWrite(PWMR, 50);
+    analogWrite(PWMR, rotationSpeed);
     break;
 
     case 4:
@@ -225,29 +240,21 @@ int calcLoc(int x_loc, int y_loc) {
 }
 
 void initializeGrid() {
-  if (SD.exists("map1.bin")) {
-    SD.remove("map1.bin");
+  if (SD.exists("Map.bin")) {
+    SD.remove("Map.bin");
   }
-  Map = SD.open("map1.bin", FILE_WRITE);
+  Map = SD.open("MAP.bin", FILE_WRITE);
   
   if(Map) {
     for(int i = 0; i < 400; i++) {
       for(int j = 0; j < 400; j++) {
-        Map.print('0');
+        Map.print(0);
       }
       Map.println();
     }
     Map.seek(calcLoc(199,199));
-    Map.print('1');
-    Map.close();
+    Map.print(1);
   } 
-//  else {
-//    //Error indication
-//    digitalWrite(LED_BUILTIN, HIGH);
-//    delay(1000);
-//    digitalWrite(LED_BUILTIN, LOW);
-//    delay(1000);
-//  }
 }
 
 void enterMaze() {
@@ -262,82 +269,137 @@ void enterMaze() {
   leftStart = left;
   rightStart = right;
   centerStart = center;
-  //initializeGrid();
   turn(86, LEFT_TURN);
 }
 
 void RightWallFollow() {
   scan();
-  while (rightWall==0){
-  //if(rightWall==0) {
-      delay(1000);
-      turn(86, RIGHT_TURN);
+  if (rightWall==0 && centerWall==0){
       Motor(FWD);
-      delay(750);
-      scan();
-      if(rightWall==0) {
-        turn(86, RIGHT_TURN);
-      }
-  } 
-  if (centerWall == 1 && leftWall == 0) {
-    delay(30);
+      delay(1000);
+      MemoryLog(1);
+      turn(RightAngleTurn, RIGHT_TURN);
+      MemoryLog(0);
+  } else if (centerWall == 1) {
     turn(86, LEFT_TURN);
+    MemoryLog(0);
   } else {
     scan();
-    computePID();
+    computePD();
     Motor(FWD);
+    MemoryLog(1);
   }
 }
 
 void turn(int turnAngle, int turnDirection) {
   mpu.update();
-  int angleGoal;
-  if(turnDirection == LEFT_TURN) {
-       angleGoal = mpu.getAngleZ() + turnAngle;
-  }
-  if(turnDirection == RIGHT_TURN) {
-       angleGoal = mpu.getAngleZ() - turnAngle;
-  }
-
-  if(angleGoal > 360) {
+  int angleGoal = turnAngle + mpu.getAngleZ();
+  if(abs(angleGoal) > 360) {
     angleGoal = angleGoal % 360;
   }
-  //Serial.print(angleGoal);
-  float currAngle = mpu.getAngleZ();
-  while(abs(currAngle-angleGoal) > 3) {
+  int currAngle = mpu.getAngleZ();
+  int error = currAngle - angleGoal;
+  while(error > 2) { 
     mpu.update();
-    //Serial.println(currAngle-angleGoal);
-    Motor(turnDirection);
     currAngle = mpu.getAngleZ();
+    error = currAngle - angleGoal;
+    rotationSpeed = 20 + error;
+    Motor(turnDirection);
   }
-  Motor(STOP);
 }
 
-float lastError = 0;
-float ErrorDiff;
-void computePID() {
-  float error = right - followDistance;
-  ErrorDiff = error - lastError;
-  leftSpeed = leftSpeed + (error*0.08);
-  rightSpeed = rightSpeed - (error*0.08);
-  lastError = error;
+float error, error_dt;
+float prev_error = 0;
+float K = 0.05;
+float D = 0.1;
+
+void computePD() {
+  error = right - sideWallDistance;
+  error_dt = error - prev_error;
+  leftSpeed = leftSpeed + (K * error) + (D * error_dt);
+  rightSpeed = rightSpeed - (K * error) - (D * error_dt);
 }
 
-void MemoryLog() {
+void MemoryLog(byte encoder) {
   memoryLog = SD.open("Log.txt", FILE_WRITE);
-  memoryLog.print(angle);
-  memoryLog.print(' ');
   memoryLog.print(left);
   memoryLog.print(' ');
   memoryLog.print(center);
   memoryLog.print(' ');
   memoryLog.print(right);
   memoryLog.print(' ');
+  memoryLog.print(angle);
+  memoryLog.print(' ');
+  if(encoder == 1) {
+    memoryLog.print(encoder);
+    memoryLog.print(' ');
+  } else {
+    memoryLog.print('0');
+    memoryLog.print(' ');
+  }
   memoryLog.close();
+  //set counter to zero
 }
 
 void rotationalMap() {
   Motor(LEFT_TURN);
   scan();
-  MemoryLog();
+  MemoryLog(0);
+}
+
+float toRads(float Angle) {
+  return (Angle/180)*PI;
+}
+
+float MapData[5];
+void readLines() {
+  memoryLog=SD.open("Log.txt", FILE_READ);
+  String s;
+  int i = 0;
+  while(s=Map.readStringUntil(' ')) {
+    MapData[i] = s.toFloat();
+    i = i + 1;
+    if (i==5) {
+      i = 0;
+      Map_Update(MapData[0], MapData[1], MapData[2], MapData[3], MapData[4]);
+    }
+  }
+  memoryLog.close();
+}
+
+void Map_Update(int Lsensor, int Csensor, int Rsensor, float angle, int distance) {
+  Map_Move(distance, angle);
+  Map_IR(1,Lsensor, angle);
+  Map_IR(2,Csensor, angle);
+  Map_IR(3,Rsensor, angle);
+}
+
+void Map_Move(int distance, float angle) { 
+  angle = angle * -1;
+  for(int i = 0; i < distance; i++) {
+    x = x + cos(toRads(angle));
+    y = y + sin(toRads(angle));
+    Map.seek(calcLoc(x,y));
+    Map.print(1);
+  }
+}
+
+void Map_IR(int sensor, int distance, float angle) {
+  int prex = x;
+  int prey = y;
+  angle = angle * -1;
+  for(int i = 0; i < distance;i++) {
+    x = x + cos(toRads(angle+(45*(sensor - 2))));
+    y = y + sin(toRads(angle+(45*(sensor - 2))));
+    Map.seek(calcLoc(x,y));
+    Map.print(1);
+  }
+  x = prex;
+  y = prey;
+}
+
+void Make_A_Map() {
+  initializeGrid();
+  readLines();
+  Map.close();
 }
