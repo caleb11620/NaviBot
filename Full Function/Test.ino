@@ -37,9 +37,7 @@ float leftStart, centerStart, rightStart;
 #define PI 3.14159265
 
 //DIP Initialization
-#define SW1 8
-#define SW2 7
-#define SW3 6
+#define SW3 8
 
 //Motor Initialization
 #define PWML 10
@@ -61,21 +59,21 @@ int leftSpeed = 60;
 int rightSpeed = 61;
 int rotationSpeed = 45;
 
-byte program = 0; 
+byte program; 
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   Wire.begin();
-
-  pinMode(13, OUTPUT);
-  
+  initializeDIP();
+  program = readDIP();
   if(program==1) {
     initializeMotor();
     initializeGyro();
     initializeIR();
-    initializeSD();
+    //initializeSD();
     waitForStart();
     enterMaze();
+    //initializeCounter();
   } else {
     Make_A_Map();
   }
@@ -83,7 +81,7 @@ void setup() {
 
 
 void loop() {
-  if (program == 1) {
+  if(program == 1) {
     RightWallFollow();
   } else {
     digitalWrite(LED_BUILTIN, HIGH);
@@ -91,6 +89,15 @@ void loop() {
 }
 
 //-------------------Functions-------------------//
+void initializeDIP() {
+  pinMode(SW3, INPUT);
+}
+
+byte readDIP() {
+  return digitalRead(SW3);
+}
+
+
 void initializeMotor() {
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
@@ -277,17 +284,17 @@ void RightWallFollow() {
   if (rightWall==0 && centerWall==0){
       Motor(FWD);
       delay(1000);
-      MemoryLog(1);
+      //MemoryLog(1);
       turn(RightAngleTurn, RIGHT_TURN);
-      MemoryLog(0);
+      //MemoryLog(0);
   } else if (centerWall == 1) {
     turn(86, LEFT_TURN);
-    MemoryLog(0);
+    //MemoryLog(0);
   } else {
     scan();
     computePD();
     Motor(FWD);
-    MemoryLog(1);
+    //MemoryLog(1);
   }
 }
 
@@ -298,14 +305,12 @@ void turn(int turnAngle, int turnDirection) {
     angleGoal = angleGoal % 360;
   }
   int currAngle = mpu.getAngleZ();
-  int error = currAngle - angleGoal;
-  while(error > 2) { 
+  while(abs(currAngle-angleGoal) > 2) { 
     mpu.update();
     currAngle = mpu.getAngleZ();
-    error = currAngle - angleGoal;
-    rotationSpeed = 20 + error;
     Motor(turnDirection);
   }
+  Motor(STOP);
 }
 
 float error, error_dt;
@@ -318,6 +323,7 @@ void computePD() {
   error_dt = error - prev_error;
   leftSpeed = leftSpeed + (K * error) + (D * error_dt);
   rightSpeed = rightSpeed - (K * error) - (D * error_dt);
+  prev_error = error;
 }
 
 void MemoryLog(byte encoder) {
@@ -402,4 +408,22 @@ void Make_A_Map() {
   initializeGrid();
   readLines();
   Map.close();
+}
+
+int count(byte zero) {
+  if(zero == 1) {
+    TCNT1 = 0;
+  } else {
+    int counter_value = TCNT1;
+    TCNT1 = 0;
+    return counter_value;
+  }
+}
+
+void initializeCounter() {
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCCR1B |= B00000111;
+  TCNT1 = 0;
+  Serial.begin(9600);
 }
