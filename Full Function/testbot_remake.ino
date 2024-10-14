@@ -166,9 +166,20 @@ void initializeSD() {
   memoryLog = SD.open("Log.txt", FILE_WRITE);
 }
 
-void scan() {
+float scanGyro() {
   mpu.update();
   angle = mpu.getAngleZ();
+  if(angle < 0) {
+    angle = 360 + angle;
+  } 
+  if(angle > 360) {
+    angle  = angle - 360;
+  }
+  return angle;
+}
+
+void scan() {
+  scanGyro();
   //Serial.print(angle);
   //Serial.print(',');
 
@@ -317,26 +328,22 @@ void RightWallFollow() {
 
 void turn(int turnAngle, int turnDirection) {
   mpu.update();
-  
-  if (turnDirection == RIGHT_TURN) {
-    turnAngle = -turnAngle;  // For right turn, angle will decrease
-  }
-
-  // Current angle from Z-axis
-  float currentAngle = mpu.getAngleZ();
-  float targetAngle = currentAngle + turnAngle;
-
-  // Handle angle wrapping (e.g., from 359° to 0°)
-  if (targetAngle > 360) {
-    targetAngle = targetAngle - 360;
-  } else if (targetAngle < 0) {
-    targetAngle = 360 + targetAngle;
+  if(turnDirection == 2) {
+    float targetAngle = scanGyro() + turnAngle;
+    if (targetAngle > 360) {
+      targetAngle = targetAngle - 360;
+    }
+  } else {
+    float targetAngle = scanGyro() - turnAngle;
+    if(targetAngle < 0) 
+      targetAngle = 360 + targetAngle;
+    }
   }
 
   // Continuously update angle and control motors
   while (true) {
     mpu.update();
-    currentAngle = mpu.getAngleZ();
+    currentAngle = scanGyro();
 
     // Check if the angle is close enough to the target
     if (abs(currentAngle - targetAngle) <= 2) {
@@ -346,32 +353,8 @@ void turn(int turnAngle, int turnDirection) {
 
     // Turn motor in the specified direction
     Motor(turnDirection);
-    delay(10);  // Adjust delay for smoother control if needed
   }
-  
   Motor(STOP);  // Stop the motor once the turn is complete
-
-
-  // mpu.update();
-  // if (turnDirection == RIGHT_TURN){
-  //   turnAngle = turnAngle * -1;
-  // }
-  // int angleGoal = turnAngle + mpu.getAngleZ();
-
-  // if(abs(angleGoal) > 360) {
-  //   angleGoal = angleGoal % 360;
-  // }
-
-  // int currAngle = mpu.getAngleZ();
-  // while(abs(currAngle-angleGoal) > 2 || abs(currAngle-angleGoal) < 2) { 
-  //   mpu.update();
-  //   currAngle = mpu.getAngleZ();
-  //   Motor(turnDirection);
-  // }
-  // Motor(STOP);
-
-
-
 }
 
 float error, error_dt;
