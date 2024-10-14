@@ -64,7 +64,7 @@ int rotationSpeed = 45;
 byte program; 
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   Wire.begin();
   initializeDIP();
   program = readDIP();
@@ -173,13 +173,13 @@ float scanGyro() {
     angle = 360 + angle;
   } 
   if(angle > 360) {
-    angle  = angle - 360;
+    angle  = fmod(angle,360);
   }
   return angle;
 }
 
 void scan() {
-  scanGyro();
+  angle=scanGyro();
   //Serial.print(angle);
   //Serial.print(',');
 
@@ -280,7 +280,6 @@ void initializeGrid() {
 }
 
 void enterMaze() {
-  
   scan();
   while(center>5) {
     scan();
@@ -308,6 +307,7 @@ void RightWallFollow() {
   //   Motor(FWD);
     
   // }  
+  scan();
   if (centerWall == 1){
     turn(86, RIGHT_TURN);
     
@@ -325,31 +325,23 @@ void RightWallFollow() {
 }
     
 float currentAngle, targetAngle;
+
 void turn(int turnAngle, int turnDirection) {
-  mpu.update();
   if(turnDirection == 2) {
     targetAngle = scanGyro() + turnAngle;
-    if (targetAngle > 360) {
+  } else if(turnDirection==3) {
+    targetAngle = scanGyro() - turnAngle;
+  }
+  if (targetAngle >= 360) {
       targetAngle = targetAngle - 360;
     }
-  } else {
-    targetAngle = scanGyro() - turnAngle;
-    if(targetAngle < 0) 
+  if(targetAngle <= 0) { 
       targetAngle = 360 + targetAngle;
     }
-
+    
   // Continuously update angle and control motors
-  while (true) {
-    mpu.update();
+  while (abs(currentAngle - targetAngle) >= 4) {
     currentAngle = scanGyro();
-
-    // Check if the angle is close enough to the target
-    if (abs(currentAngle - targetAngle) <= 2) {
-      Motor(STOP);
-      break;
-    }
-
-    // Turn motor in the specified direction
     Motor(turnDirection);
   }
   Motor(STOP);  // Stop the motor once the turn is complete
