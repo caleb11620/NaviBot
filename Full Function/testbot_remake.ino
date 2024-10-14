@@ -101,7 +101,6 @@ byte readDIP() {
   return digitalRead(SW3);
 }
 
-
 void initializeMotor() {
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
@@ -112,12 +111,12 @@ void initializeMotor() {
 
 void initializeGyro() {
   byte status = mpu.begin();
-  Serial.print("MPU6050 status: ");
-  Serial.println(status);
+  //Serial.print("MPU6050 status: ");
+  //Serial.println(status);
   while(status!=0) {}
-  Serial.println("Calculating offsets, do not move the MPU6050");
+  //Serial.println("Calculating offsets, do not move the MPU6050");
   mpu.calcOffsets();
-  Serial.println("Done!\n");
+  //Serial.println("Done!\n");
 }
 
 void initializeIR() {
@@ -165,6 +164,7 @@ void initializeSD() {
   //Serial.println("Initialization Complete");
   memoryLog = SD.open("Log.txt", FILE_WRITE);
 }
+
 
 float scanGyro() {
   mpu.update();
@@ -324,21 +324,19 @@ void RightWallFollow() {
   //   }
 }
     
-
-
+float currentAngle, targetAngle;
 void turn(int turnAngle, int turnDirection) {
   mpu.update();
   if(turnDirection == 2) {
-    float targetAngle = scanGyro() + turnAngle;
+    targetAngle = scanGyro() + turnAngle;
     if (targetAngle > 360) {
       targetAngle = targetAngle - 360;
     }
   } else {
-    float targetAngle = scanGyro() - turnAngle;
+    targetAngle = scanGyro() - turnAngle;
     if(targetAngle < 0) 
       targetAngle = 360 + targetAngle;
     }
-  }
 
   // Continuously update angle and control motors
   while (true) {
