@@ -74,8 +74,6 @@ void setup() {
   std::vector<Node*> path = astar.algorithm(start, exit);
   std::vector<step> solution;
 
-  astar.printGrid(path);
-
   char direction;
   int angle;
   String newHeading = "N";

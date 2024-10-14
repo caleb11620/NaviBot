@@ -190,34 +190,3 @@ Node* Astar::determineGoalNode() {
     //grid[0][(aWidth-1)/2]->exit = true;
     //return grid[0][(aWidth-1)/2];
 }
-
-void Astar::printGrid(const std::vector<Node*>& path) {
-    char displayGrid[aHeight][aWidth];
-
-    for (int i{0}; i < aHeight; ++i) {
-        for (int j{0}; j < aWidth; ++j) {
-            displayGrid[i][j] = grid[i][j]->isObstacle ? '1' : '0';
-        }
-    }
-
-    for (size_t i = 0; i < path.size(); ++i) {
-        displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : ((i == path.size() - 1) ? 'G' : '*');
-    }
-
-    // Print the grid, change to log
-    /*
-    std::cout << "  ";
-    for (int i = 0; i < aWidth; ++i) {
-        std::cout << std::setw(2) << i << " ";
-    }
-    std::cout << std::endl;
-    */
-
-    for (int i = 0; i < aHeight; ++i) {
-        //std::cout << std::setw(2) << i << " "; // change to log
-        for (int j = 0; j < aWidth; ++j) {
-            //std::cout << displayGrid[i][j]; // change to log
-        }
-        //std::cout << std::endl; // change to log
-    }
-}
