@@ -18,7 +18,7 @@ byte leftWall, centerWall, rightWall;
 #define followDistance 10
 
 #define frontWallDistance  6
-#define sideWallDistance  20
+#define sideWallDistance  12
 
 //Gyro Initialization
 MPU6050 mpu(Wire);
@@ -64,7 +64,7 @@ int rotationSpeed = 45;
 byte program; 
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   Wire.begin();
   initializeDIP();
   program = readDIP();
@@ -81,12 +81,9 @@ void setup() {
   }
 }
 
-
 void loop() {
   if(program == 1) {
-    
     RightWallFollow();
-    
   } else {
     digitalWrite(LED_BUILTIN, HIGH);
   }
@@ -190,12 +187,8 @@ void scan() {
   //Serial.print(center);
   //Serial.print(',');
   right = RightSensor.readRangeContinuousMillimeters()*0.1;
-  //Serial.print(right);
+  //Serial.println(right);
   //Serial.print(',');
-  
-  if(left<sideWallDistance) {leftWall=1;} else {leftWall=0;}
-  if(center<frontWallDistance) {centerWall=1;} else {centerWall=0;}
-  if(right<sideWallDistance) {rightWall=1;} else {rightWall=0;}
   
 }
 
@@ -295,33 +288,21 @@ void enterMaze() {
 }
 
 void RightWallFollow() {
-  
-
-  // while(true){
-  //   scan();
-  // if(centerWall == 1 && rightWall == 1){
-  //   turn(86, LEFT_TURN);
-    
-  // }
-  // if (centerWall == 0 && rightWall == 1){
-  //   Motor(FWD);
-    
-  // }  
-  scan();
-  if (centerWall == 1){
-    turn(86, RIGHT_TURN);
-    
-   }
-  //  if (rightWall == 0){
-  
-  //   delay(1000);
-  //   //turn(90, RIGHT_TURN);
-  //   Motor(FWD);
-  //   delay(1000);
-  //   Motor(STOP);
-  //   delay(1000);
-    
-  //   }
+   scan();
+   if (right > 20 && center > 15){
+    Motor(FWD);
+    delay(1500);
+    turn(90, RIGHT_TURN);
+    Motor(FWD);
+    delay(1000);
+    Motor(STOP);
+    delay(1000);
+   } else if (center < 15 && right < 20){
+     turn(86, LEFT_TURN);
+   } else{
+     Motor(FWD);
+     computePD();
+   }    
 }
     
 float currentAngle, targetAngle;
@@ -349,11 +330,11 @@ void turn(int turnAngle, int turnDirection) {
 
 float error, error_dt;
 float prev_error = 0;
-float K = 0.05;
-float D = 0.1;
+float K = 0.5;
+float D = 1;
 
 void computePD() {
-  error = right - sideWallDistance;
+  error = right - 10;
   error_dt = error - prev_error;
   leftSpeed = leftSpeed + (K * error) + (D * error_dt);
   rightSpeed = rightSpeed - (K * error) - (D * error_dt);
