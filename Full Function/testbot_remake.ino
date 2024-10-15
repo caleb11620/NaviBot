@@ -28,7 +28,7 @@ float angle;
 //SD initialization 
 float x, y;
 #define CS A0
-File memoryLog;
+File memoryLog, log_val_file;
 File Map;
 float leftStart, centerStart, rightStart;
 
@@ -72,7 +72,7 @@ void setup() {
     initializeMotor();
     initializeGyro();
     initializeIR();
-    //initializeSD();
+    initializeSD();
     waitForStart();
     enterMaze();
     //initializeCounter();
@@ -160,6 +160,10 @@ void initializeSD() {
   }
   //Serial.println("Initialization Complete");
   memoryLog = SD.open("Log.txt", FILE_WRITE);
+  if (SD.exists("output.txt")) {
+    SD.remove("output.txt");
+  }
+  log_val_file = SD.open("output.txt", FILE_WRITE);
 }
 
 
@@ -299,9 +303,10 @@ void RightWallFollow() {
     delay(1000);
    } else if (center < 15 && right < 20){
      turn(86, LEFT_TURN);
-   } else{
-     Motor(FWD);
+   } else {
      computePD();
+     Motor(FWD);
+     logValues();
    }    
 }
     
@@ -330,8 +335,8 @@ void turn(int turnAngle, int turnDirection) {
 
 float error, error_dt;
 float prev_error = 0;
-float K = 0.5;
-float D = 1;
+float K = 0.8;
+float D = 1.0;
 
 void computePD() {
   error = right - 10;
@@ -339,6 +344,24 @@ void computePD() {
   leftSpeed = leftSpeed + (K * error) + (D * error_dt);
   rightSpeed = rightSpeed - (K * error) - (D * error_dt);
   prev_error = error;
+}
+
+void logValues () {
+  log_val_file = SD.open("output.txt", FILE_WRITE);
+  log_val_file.print("IR (L C R): ")
+  log_val_file.print(left);
+  log_val_file.print(' ');
+  log_val_file.print(center);
+  log_val_file.print(' ');
+  log_val_file.print(right);
+  log_val_file.print(" ; ");
+  log_val_file.print("mspeed (L R): ");
+  log_val_file.print(leftSpeed);
+  log_val_file.print(' ');
+  log_val_file.println(rightSpeed);
+  log_val_file.print("error: ");
+  log_val_file.println(error);
+  log_val_file.close();
 }
 
 void MemoryLog(byte encoder) {
