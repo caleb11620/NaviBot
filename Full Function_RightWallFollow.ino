@@ -85,8 +85,8 @@ void setup() {
 
 void loop() {
   if(program == 1) {
-    //rotationalMap();
-    RightWallFollow();
+    rotationalMap();
+    //RightWallFollow();
   } else {
     digitalWrite(LED_BUILTIN, HIGH);
   }
@@ -277,7 +277,7 @@ void initializeGrid() {
 
 void enterMaze() {
   scan();
-  while(center>4.5) {
+  while(center>4) {
     scan();
     Motor(FWD, 60, 61);
   }
@@ -294,7 +294,14 @@ void RightWallFollow() {
    scan();
    if (right >= 20) {
     Motor(FWD, 60, 61);
-    delay(900);
+    if(center < 25) {
+      while(center > 4) {
+         Motor(FWD, 60, 61);
+         scan();
+      }
+    } else {
+        delay(1000);
+    }
     turn(80, RIGHT_TURN);
    } else if (center <= 5){
      turn(86, LEFT_TURN);
