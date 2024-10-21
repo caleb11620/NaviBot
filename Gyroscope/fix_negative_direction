@@ -1,0 +1,28 @@
+float scanGyro() {
+  mpu.update();
+  angle = mpu.getAngleZ();
+  if(angle < 0) {
+    angle = 360 + angle;
+  } 
+  if(angle > 360) {
+    angle  = fmod(angle,360);
+  }
+  return angle;
+}
+
+void scan() {
+  angle=scanGyro();
+  //Serial.print(angle);
+  //Serial.print(',');
+
+  left = LeftSensor.readRangeContinuousMillimeters()*0.1;
+  //Serial.print(left);
+  //Serial.print(',');
+  center = CenterSensor.readRangeContinuousMillimeters()*0.1;
+  //Serial.print(center);
+  //Serial.print(',');
+  right = RightSensor.readRangeContinuousMillimeters()*0.1;
+  //Serial.println(right);
+  //Serial.print(',');
+  
+}
