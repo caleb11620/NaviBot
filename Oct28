@@ -1,4 +1,4 @@
-//changed the start and right wall center IR sensor to 5
+// changes in the rotational speed and delay on the right wall follow
 //Libraries
 //issues is the gyro not calculating right angle turns
 #include <MPU6050_light.h>
@@ -310,7 +310,7 @@ void Motor(int command, int leftspeed, int rightspeed) {
       digitalWrite(STBY, HIGH);
       digitalWrite(AIN1, HIGH);
       digitalWrite(AIN2, LOW);
-      analogWrite(PWML, rotationSpeed);
+      analogWrite(PWML, rotationSpeed-10);
       digitalWrite(BIN1, HIGH);
       digitalWrite(BIN2, LOW);
       analogWrite(PWMR, rotationSpeed);
@@ -392,7 +392,7 @@ void RightWallFollow() {
         scan();
       }
     } else {
-      delay(950);
+      delay(1050);
     }
     turn(80, RIGHT_TURN);
   } else if (right < 13) {
@@ -442,6 +442,7 @@ void computePD() {
       rightSpeed = SPEED - outputD;
       prev_error = error;
     }
+    
   } else {
     if (left < 20) {
       error = left - 9;
