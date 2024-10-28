@@ -1,3 +1,4 @@
+//changed the start and right wall center IR sensor to 5
 //Libraries
 //issues is the gyro not calculating right angle turns
 #include <MPU6050_light.h>
@@ -362,7 +363,7 @@ void initializeGrid() {
 
 void enterMaze() {
   scan();
-  while (center > 5.5) {
+  while (center > 5) {
     scan();
     Motor(FWD, 58, 61);
   }
@@ -381,12 +382,12 @@ void enterMaze() {
 
 void RightWallFollow() {
   scan();
-  if (center <= 5.5) {
+  if (center <= 5) {
     turn(84, LEFT_TURN);
   } else if (right >= 20) {
     Motor(FWD, 58, 61);
     if (center < 22) {
-      while (center > 5.5) {
+      while (center > 5) {
         Motor(FWD, 58, 61);
         scan();
       }
