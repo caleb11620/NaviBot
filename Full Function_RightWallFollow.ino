@@ -1,5 +1,4 @@
 //Libraries
-//issues is the gyro not calculating right angle turns
 
 #include <MPU6050_light.h>
 #include "Wire.h"
