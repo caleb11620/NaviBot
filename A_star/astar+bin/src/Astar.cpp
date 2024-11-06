@@ -162,7 +162,11 @@ std::vector<Node*> Astar::algorithm(Node* start, Node* goal) {
 }
 
 // current assumption in determining the start is it is the first non-obstacle in the bottom row
-Node* Astar::determineStartNode() {
+Node* Astar::determineStartNode(int inputX, int inputY) {
+    if (inputX || inputY) {
+        grid[inputY][inputX]->start = true;
+        return grid[inputY][inputX];
+    }
     for (int x = 0; x < aWidth; ++x) {
         if (!grid[aHeight-1][x]->isObstacle) {
             grid[aHeight-1][x]->start = true;

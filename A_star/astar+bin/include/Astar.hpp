@@ -31,7 +31,7 @@ class Astar {
         Node* findLowestF(std::vector<Node*>& openSet);
         std::vector<Node*> reconstructPath(Node* current);
         std::vector<Node*> algorithm(Node* startNode, Node* goalNode);
-        Node* determineStartNode();
+        Node* determineStartNode(int inputX, int inputY);
         Node* determineGoalNode();
         void printGrid(const std::vector<Node*>& path);
 };

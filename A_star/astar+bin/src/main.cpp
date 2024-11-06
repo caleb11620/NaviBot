@@ -42,7 +42,9 @@ int main(int argc, char **argv)
     auto astardata = bmp.getData();
     astar.interpretBitmap(astardata);
 
-    Node* start = astar.determineStartNode();
+    int inX = 0;
+    int inY = 0;
+    Node* start = astar.determineStartNode(inX, inY);
     Node* exit = astar.determineGoalNode();
 
     std::cout << "startNode x:" << start->x << " y:" << start->y << std::endl;
