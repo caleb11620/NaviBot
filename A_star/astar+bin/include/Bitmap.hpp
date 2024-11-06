@@ -7,8 +7,8 @@
 #include <iostream>
 #include <algorithm>
 
-const int MAX_WIDTH = 1000;
-const int MAX_HEIGHT = 1000;
+const int MAX_WIDTH = 400;
+const int MAX_HEIGHT = 400;
 
 // Bitmap class for everything about reading/writing .BIN
 class Bitmap
