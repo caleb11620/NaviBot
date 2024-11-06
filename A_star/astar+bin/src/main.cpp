@@ -42,10 +42,22 @@ int main(int argc, char **argv)
     auto astardata = bmp.getData();
     astar.interpretBitmap(astardata);
 
-    int inX = 100;
-    int inY = 100;
-    int exitX = 268;
-    int exitY = 127;
+    int inX = 0;
+    int inY = 0;
+    int exitX = 0;
+    int exitY = 0;
+    if (argc == 6) {
+        inX = std::stoi(argv[2]);
+        inY = std::stoi(argv[3]);
+        exitX = std::stoi(argv[4]);
+        exitY = std::stoi(argv[5]);
+    }
+
+    //int inX = std::stoi(argv[2]);
+    //int inY = std::stoi(argv[3]);
+    //int exitX = 268;
+    //int exitY = 127;
+
     Node* start = astar.determineStartNode(inX, inY);
     Node* exit = astar.determineGoalNode(exitX, exitY);
 
@@ -56,7 +68,7 @@ int main(int argc, char **argv)
     std::vector<Node*> path = astar.algorithm(start, exit);
     std::vector<step> solution;
 
-    //astar.printGrid(path);
+    astar.printGrid(path);
 
     char direction;
     int angle;
