@@ -180,7 +180,11 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
 }
 
 // current assumption in determining the goal is it is the first non-obstacle in the top row
-Node* Astar::determineGoalNode() {
+Node* Astar::determineGoalNode(int exitX, int exitY) {
+    if (exitX || exitY) {
+        grid[exitY][exitX]->exit = true;
+        return grid[exitY][exitX];
+    }
     for (int x = 0; x < aWidth; ++x) {
         if (!grid[0][x]->isObstacle) {
             grid[0][x]->exit = true;

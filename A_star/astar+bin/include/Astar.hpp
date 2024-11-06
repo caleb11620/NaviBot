@@ -32,7 +32,7 @@ class Astar {
         std::vector<Node*> reconstructPath(Node* current);
         std::vector<Node*> algorithm(Node* startNode, Node* goalNode);
         Node* determineStartNode(int inputX, int inputY);
-        Node* determineGoalNode();
+        Node* determineGoalNode(int exitX, int exitY);
         void printGrid(const std::vector<Node*>& path);
 };
 
