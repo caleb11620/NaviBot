@@ -1,6 +1,6 @@
 #include "Astar.h"
 // replace reverse and find functionality
-//#include <algorithm>
+#include <algorithm>
 #include <stdio.h>
 //#include <iostream>
 //#include <iomanip>

@@ -60,6 +60,7 @@ bool Bitmap::write(File &file)
       return false;
     }
   }
+  return true;
 }
 
 void Bitmap::invertPixel(int x, int y)
