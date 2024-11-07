@@ -53,11 +53,6 @@ int main(int argc, char **argv)
         exitY = std::stoi(argv[5]);
     }
 
-    //int inX = std::stoi(argv[2]);
-    //int inY = std::stoi(argv[3]);
-    //int exitX = 268;
-    //int exitY = 127;
-
     Node* start = astar.determineStartNode(inX, inY);
     Node* exit = astar.determineGoalNode(exitX, exitY);
 
@@ -65,8 +60,9 @@ int main(int argc, char **argv)
     std::cout << "startNode x:" << start->x << " y:" << start->y << std::endl;
     std::cout << "exitNode x:" << exit->x << " y:" << exit->y << std::endl;
 
+    astar.setHeuristicType(HeuristicType::MANHATTAN);
     std::vector<Node*> path = astar.algorithm(start, exit);
-    path = astar.smoothPath(path);
+    //path = astar.smoothPath(path);
     std::vector<step> solution;
 
     astar.printGrid(path);

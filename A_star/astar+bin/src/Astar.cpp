@@ -57,24 +57,33 @@ bool Astar::isValid(int x, int y) {
 }
 
 float Astar::heuristic(int x1, int y1, int x2, int y2) {
-    // manhattan distance
-    //return abs(x1 - x2) + abs(y1 - y2);
+    switch (heuristicType) {
+        case HeuristicType::MANHATTAN:
+            // manhattan distance
+            return abs(x1 - x2) + abs(y1 - y2);
 
-    // euclidean distance
-    //return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+        case HeuristicType::EUCLIDEAN:
+            // euclidean distance
+            return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 
-    // chebyshev distance
-    //return std::max(abs(x1 - x2), abs(y1 - y2));
+        case HeuristicType::CHEBYSHEV:
+            // chebyshev distance
+            return std::max(abs(x1 - x2), abs(y1 - y2));
 
-    // octile distance
-    int dx = abs(x1 - x2);
-    int dy = abs(y1 - y2);
-    //return (dx + dy) + (std::sqrt(2) - 2) * std::min(dx, dy);
+        case HeuristicType::OCTILE:
+            goto default_jmp;
 
-    // octile distance with variable diagonal cost
-    float D = 1.0; // cost of moving straight
-    float D2 = sqrt(2); // cost of moving diagonally
-    return D * (dx + dy) + (D2 - 2 * D) * std::min(dx, dy);
+        default:
+            default_jmp:
+                // octile distance
+                int dx = abs(x1 - x2);
+                int dy = abs(y1 - y2);
+                //return (dx + dy) + (std::sqrt(2) - 2) * std::min(dx, dy);
+                // octile distance with variable diagonal cost
+                float D = 1.0f; // cost of moving straight
+                float D2 = 1.414214f; // cost of moving diagonally
+                return D * (dx + dy) + (D2 - 2 * D) * std::min(dx, dy);
+    }
 }
 
 std::vector<Node*> Astar::smoothPath(const std::vector<Node*>& originalPath) {
@@ -135,20 +144,21 @@ bool Astar::hasLineOfSight(Node* start, Node* end) {
 
 std::vector<Node*> Astar::getNeighbors(Node* node) {
     std::vector<Node*> neighbors;
-    int dx[] = { -1, 0, 1, 0, -1, 1, 1, -1 };
-    int dy[] = { 0, 1, 0, -1, 1, 1, -1, -1 };
-
-// for loop conditionali < 8 : 8 is the number of directions which depends on
-// heuristic type and type of movement allowed.
-    for (int i{0}; i < 8; ++i) {
+    
+    // Order movements: cardinal directions first, then diagonals
+    int dx[] = { 0, 1, 0, -1, -1, 1, 1, -1 };
+    int dy[] = { -1, 0, 1, 0, -1, 1, -1, 1 };
+    
+    // If using Manhattan distance, only use first 4 directions
+    int numDirections = (heuristicType == HeuristicType::MANHATTAN) ? 4 : 8;
+    
+    for (int i = 0; i < numDirections; ++i) {
         int newX = node->x + dx[i];
         int newY = node->y + dy[i];
-
         if (isValid(newX, newY)) {
             neighbors.push_back(grid[newY][newX]);
         }
     }
-
     return neighbors;
 }
 
