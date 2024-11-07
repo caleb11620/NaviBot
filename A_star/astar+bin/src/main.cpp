@@ -66,6 +66,7 @@ int main(int argc, char **argv)
     std::cout << "exitNode x:" << exit->x << " y:" << exit->y << std::endl;
 
     std::vector<Node*> path = astar.algorithm(start, exit);
+    path = astar.smoothPath(path);
     std::vector<step> solution;
 
     astar.printGrid(path);
