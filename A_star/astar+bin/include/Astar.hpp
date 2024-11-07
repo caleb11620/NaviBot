@@ -27,12 +27,14 @@ class Astar {
         void cleanupGrid();
         bool isValid(int x, int y);
         float heuristic(int x1, int y1, int x2, int y2);
+        std::vector<Node*> smoothPath(const std::vector<Node*>& originalPath);
+        bool hasLineOfSight(Node* start, Node* end);
         std::vector<Node*> getNeighbors(Node* node);
         Node* findLowestF(std::vector<Node*>& openSet);
         std::vector<Node*> reconstructPath(Node* current);
         std::vector<Node*> algorithm(Node* startNode, Node* goalNode);
-        Node* determineStartNode();
-        Node* determineGoalNode();
+        Node* determineStartNode(int inputX, int inputY);
+        Node* determineGoalNode(int exitX, int exitY);
         void printGrid(const std::vector<Node*>& path);
 };
 
