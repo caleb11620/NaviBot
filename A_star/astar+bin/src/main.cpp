@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
     // printing out every coordinate-to-coordinate movement
     // along with direction, angle, and heading to make movement
-    Heading newHead = Heading::N;
+    Heading newHead = Heading::N; // assuming bot starts facing north at start location in map
     Heading head = newHead;
     for (int i = 0 ; i < path.size()-1; ++i) {
         std::cout << "(" << path[i]->x << "," << path[i]->y << ")";

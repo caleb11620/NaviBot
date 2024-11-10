@@ -45,11 +45,13 @@ class Astar {
         std::vector<step> solution;
         int aWidth;
         int aHeight;
+        Node* start_node = nullptr;
+        Node* exit_node = nullptr;
 
 
     public:
         Astar();
-        void interpretBitmap(const std::vector<std::vector<bool>>& bmp);
+        void interpretBitmap(const std::vector<std::vector<int>>& bmp);
         void initializeGrid();
         void cleanupGrid();
         bool isValid(int x, int y);

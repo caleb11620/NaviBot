@@ -10,7 +10,7 @@
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
 
-void Astar::interpretBitmap(const std::vector<std::vector<bool>>& bmp) {
+void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     printf("AStar::Interpreting bitmap...\n");
     printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
@@ -29,7 +29,15 @@ void Astar::interpretBitmap(const std::vector<std::vector<bool>>& bmp) {
     initializeGrid();
     for (int y{0}; y < aHeight; ++y) {
         for (int x{0}; x < aWidth; ++x) {
-            grid[y][x]->isObstacle = bmp[y][x];
+            if (bmp[y][x] == 1){
+                grid[y][x]->isObstacle = true;
+            } else if (bmp[y][x] == 2){
+                grid[y][x]->start = true;
+                start_node = grid[y][x];
+            } else if (bmp[y][x] == 3){
+                grid[y][x]->exit = true;
+                exit_node = grid[y][x];
+            }
         }
     }
 }
@@ -189,6 +197,9 @@ std::vector<Node*> Astar::reconstructPath(Node* current) {
 std::vector<Node*> Astar::algorithm(Node* start, Node* goal) {
     std::vector<Node*> openSet;
     std::vector<Node*> closedSet;
+
+    start = start_node;
+    goal = exit_node;
 
     start->g = 0;
     start->h = heuristic(start->x, start->y, goal->x, goal->y);
