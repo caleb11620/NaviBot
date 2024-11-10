@@ -2,31 +2,50 @@
 #define ASTAR_HPP
 
 #include <vector>
+#include <array>
 
-struct Node {
-    int x, y;
-    float g, h, f;
-    Node* parent;
-    bool isObstacle;
-    bool start;
-    bool exit;
-
-    Node(int x, int y) : x(x), y(y), g(0.0), h(0.0), f(0.0), parent(nullptr), isObstacle(false), start(false), exit(false) {}
+enum class Heading {
+    N, NE, E, SE, S, SW, W, NW
 };
-
+enum class Turn {
+    FORWARD = 'F',
+    RIGHT = 'R',
+    LEFT = 'L',
+    INVALID = 'X'
+};
 enum class HeuristicType {
     MANHATTAN,
     EUCLIDEAN,
     CHEBYSHEV,
     OCTILE
 };
+// representation of every cm2 in map
+struct Node {
+    int x, y;       // grid coordinates
+    float g, h, f;  // A* necessary values
+    Node* parent;
+    bool isObstacle;
+    bool start;
+    bool exit;
 
+    // init
+    Node(int x, int y) : x(x), y(y), g(0.0), h(0.0), f(0.0), parent(nullptr),
+        isObstacle(false), start(false), exit(false){}
+};
+// step-by-step instructions for solution
+struct step {
+    // how to physically get to the next location
+    Turn turn;          // which way to turn (or not, stay forward) relative to bot
+    int angle;          // how far to turn
+};
 class Astar {
     private:
         HeuristicType heuristicType = HeuristicType::OCTILE;
         std::vector<std::vector<Node*>> grid;
+        std::vector<step> solution;
         int aWidth;
         int aHeight;
+
 
     public:
         Astar();
@@ -45,6 +64,10 @@ class Astar {
         Node* determineStartNode(int inputX, int inputY);
         Node* determineGoalNode(int exitX, int exitY);
         void printGrid(const std::vector<Node*>& path);
+
+        step calculateTurn(Heading from, Heading to);
+        step calculateSolutionVars(int x1, int y1, int x2, int y2,
+            Heading currHeading);
 };
 
 #endif // ASTAR_HPP
