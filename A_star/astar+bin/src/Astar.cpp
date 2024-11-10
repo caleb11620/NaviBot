@@ -320,7 +320,7 @@ void Astar::printGrid(const std::vector<Node*>& path) {
 }
 
 // calculates the angle needed to go from one cardinal direction to another
-step calculateTurn(Heading from, Heading to){
+step Astar::calculateTurn(Heading from, Heading to){
     if (from == to){
         return {Turn::FORWARD, 0};
     }
@@ -339,7 +339,7 @@ step calculateTurn(Heading from, Heading to){
 }
 
 
-step calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHead) {
+std::tuple<Turn, int, Heading> Astar::calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHead) {
     int dx = x2 - x1;
     int dy = y1 - y2;
 
@@ -359,5 +359,10 @@ step calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHead) {
             newHead = static_cast<Heading>(i);
         }
     }
-    return calculateTurn(currHead, newHead);
+    step change = calculateTurn(currHead, newHead);
+    return {
+        change.turn,
+        change.angle,
+        newHead
+    };
 }
