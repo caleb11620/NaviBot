@@ -9,11 +9,11 @@
 
 std::tuple<char, int, std::string> calculateDirectionAngleAndHeading(int x1, int y1, int x2, int y2, const std::string& currentHeading);
 
-struct step {
-    int angle;
-    int distance {1};
-    char direction;
-};
+//struct step {
+    //int angle;
+    //int distance {1};
+    //char direction;
+//};
 
 int main(int argc, char **argv)
 {
@@ -64,26 +64,18 @@ int main(int argc, char **argv)
 
     // printing out every coordinate-to-coordinate movement
     // along with direction, angle, and heading to make movement
-    char direction;
-    int angle;
-    std::string newHeading{"N"};
-    std::string heading = newHeading;
-    std::cout << "Path vector: (x,y)" << std::endl;
+    Heading newHead = Heading::N;
+    Heading head = newHead;
     for (int i = 0 ; i < path.size()-1; ++i) {
-        std::cout << "(" << path[i]->x << "," << path[i]->y << ")";
         std::cout << " -> " << "(" << path[i+1]->x << "," << path[i+1]->y << ") ";
-        auto [direction, angle, newHeading] = calculateDirectionAngleAndHeading(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, heading);
-        heading = newHeading;
-        std::cout << "Direction: " << direction << ", Angle: " << angle << ", New Heading: " << newHeading << std::endl;
-        step val;
-        val.direction = direction;
-        val.angle = angle;
-        val.distance = 1;
+        step val = astar.calculateSolutionVars(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, head);
+        head = newHead;
+        std::cout << "Direction: " << val.turn << ", Angle: " << val.angle << ", New Heading: " << newHead << std::endl;
         solution.push_back(val);
     }
     // when direction is unchanging combine & erase steps by adding 'distance'
     for (int i = 0; i < solution.size()-1; ++i) {
-        if (solution[i].direction == 'F' && solution[i].direction == solution[i+1].direction) {
+        if (solution[i].turn == Turn::FORWARD && solution[i].turn == solution[i+1].turn) {
             solution[i].distance++;
             solution.erase(solution.begin() + i+1);
             --i;
