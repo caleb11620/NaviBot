@@ -10,7 +10,17 @@
 #include <VL53L0X.h>
 #include <SPI.h>
 
+// ASTAR
+#include "Astar.h"
+#include "Bitmap.h"
 
+struct outcome {
+  Turn turn;
+  int angle;
+  int distance = 1;
+};
+
+std::vector<outcome> solution;
 
 //IR Sensor Initialization
 VL53L0X LeftSensor, CenterSensor, RightSensor;
@@ -86,6 +96,22 @@ const int led1 = 2;
 volatile unsigned int pulseCount = 0;
 int program;
 
+// Function Prototypes
+void initializeDIP();
+int readDIP();
+void initializeMotor();
+void initializeGyro();
+void initializeIR();
+void initializeSD();
+void waitForStart();
+void enterMaze();
+void initializeCounter();
+void RotationalMap();
+void Make_A_Map();
+void Motor(int command, int leftspeed, int rightspeed);
+void RightWallFollow();
+void LeftWallFollow();
+
 void setup() {
 //  Serial.begin(115200);
 //  while(!Serial);
@@ -98,6 +124,7 @@ void setup() {
   pinMode(BLUE, OUTPUT);
   switch (program) {
     case 0:
+    {
       //Right Wall Follow Initialization
       initializeMotor();
       initializeGyro();
@@ -107,8 +134,9 @@ void setup() {
       enterMaze();
       initializeCounter();
       break;
-
+    }
     case 1:
+    {
       //Left Wall Follow Initialization
       initializeMotor();
       initializeGyro();
@@ -118,8 +146,9 @@ void setup() {
       enterMaze();
       initializeCounter();
       break;
-
+    }
     case 10:
+    {
       //Rotational Map Initialization
       initializeMotor();
       initializeGyro();
@@ -147,8 +176,9 @@ void setup() {
       analogWrite(GREEN, 100);
       analogWrite(BLUE, 256);
       break;
-
+    }
     case 11:
+    {
       initializeSD();
       analogWrite(RED, 100);
       analogWrite(GREEN, 256);
@@ -158,11 +188,47 @@ void setup() {
       analogWrite(GREEN, 100);
       analogWrite(BLUE, 256);
       break;
-
-    case 111:
+    }
+    case 111: // ASTAR
+    {
       initializeSD();
       //RED LED
-      //A*
+      Bitmap bmp;
+      Astar astar;
+      // TODO: REPLACE WITH ACTUAL MAZE MAP FILE NAME
+      //bmp.read(/*MAZE_FILE_NAME_HERE*/);
+      ///*MAZE_FILE_NAME_HERE*/.close();
+      bmp.removeEmptyRowsAndColumns();
+
+      auto astardata = bmp.getData();
+      astar.interpretBitmap(astardata);
+
+      Node* start = astar.determineStartNode();
+      Node* exit = astar.determineGoalNode();
+
+      // HEURISTIC TYPES: MANHATTAN, EUCLIDEAN, CHEBYSHEV, OCTILE,
+      // MANHATTAN: ONLY 90 DEGREE TURNS
+      // EUCLIDEAN, CHEBYSHEV, OCTILE: REQUIRES 45 DEGREE TURNS
+      astar.setHeuristicType(HeuristicType::MANHATTAN);
+      std::vector<Node*> path = astar.algorithm(start, exit);
+      
+      Heading head = Heading::N;
+      for (int i = 0; i < path.size()-1; ++i) {
+        auto [direction, angle, newHeading] = astar.calculateSolutionVars(path[i]->x, path[i]->y,
+          path[i+1]->x, path[i+1]->y, head);
+        head = newHeading;
+        outcome val = {direction, angle, 1};
+        solution.push_back(val);
+      }
+      // when direction is unchanging combine & erase steps by adding 'distance'
+      for (int i = 0; i < solution.size()-1; ++i) {
+        if (solution[i].turn == Turn::FORWARD && solution[i].turn == solution[i+1].turn) {
+          solution[i].distance++;
+          solution.erase(solution.begin() + i+1);
+          --i;
+        }
+      }
+      astar.cleanupGrid();
       //GREEN LED
       initializeMotor();
       initializeGyro();
@@ -171,6 +237,7 @@ void setup() {
       enterMaze();
       initializeCounter();
       break;
+    }
 
     default:
       break;
@@ -193,17 +260,41 @@ void loop() {
     case 11:
       break;
 
-    case 111:
-      for(int i = 0; i < vector.len(); i++) {
-       //direction = get vector direection
-       //degree = get vector degree change
-       //turn(degree change, left/right)
-       //distance = get vecor distance
-       pulseCount = 0;
-       //while pulseCount < distance: MotorFwd       
+    case 111: // ASTAR
+    {
+      for (int i = 0; i < solution.size()-1; i++) {
+        // GET DIRECTION
+        char runDirection = static_cast<char>(solution[i].turn);
+        switch (runDirection) {
+          case 'F':
+            runDirection = FWD;
+            break;
+          case 'R':
+            runDirection = RIGHT_TURN;
+            break;
+          case 'L':
+            runDirection = LEFT_TURN;
+            break;
+          default:
+            runDirection = FWD;
+            break;
+        }
+        // GET ANGLE
+        int runAngle = solution[i].angle;
+        // GET DISTANCE
+        int runDistance = solution[i].distance;
+
+        if (runDirection != FWD) {
+          turn(runAngle, runDirection);
+        }
+
+        pulseCount = 0;
+        while (pulseCount < distance) {
+          Motor(FWD, 56, 61);
+        }
       }
       break;
-
+    }
     default:
       break;
   }
