@@ -17,31 +17,27 @@ struct step {
 
 int main(int argc, char **argv)
 {
-    printf("Hello, from bitmap!\n");
-
     std::cout << "Have " << argc << " arguments:\n";
     for (int i = 0; i < argc; ++i) {
         std::cout << argv[i] << "\n";
     }
 
     Bitmap bmp;
-
     if (bmp.read(argv[1])) {
         std::cout << "Bitmap successfully read.\n";
     }
 
     bmp.removeEmptyRowsAndColumns();
-
     if (bmp.write("cropped_output.bin")) {
         std::cout << "Bitmap successfully written.\n";
     }
-
     std::cout << "Adjusted bitmap width: " << bmp.getWidth() << " height: " << bmp.getHeight() << std::endl;
 
     Astar astar;
     auto astardata = bmp.getData();
     astar.interpretBitmap(astardata);
 
+    // determine start and end nodes
     int inX = 0;
     int inY = 0;
     int exitX = 0;
@@ -52,21 +48,22 @@ int main(int argc, char **argv)
         exitX = std::stoi(argv[4]);
         exitY = std::stoi(argv[5]);
     }
-
     Node* start = astar.determineStartNode(inX, inY);
     Node* exit = astar.determineGoalNode(exitX, exitY);
-
-    std::cout << '.' << std::endl;
     std::cout << "startNode x:" << start->x << " y:" << start->y << std::endl;
     std::cout << "exitNode x:" << exit->x << " y:" << exit->y << std::endl;
 
+    // set heuristic (cost for movement/path determination) and start alg.
     astar.setHeuristicType(HeuristicType::MANHATTAN);
     std::vector<Node*> path = astar.algorithm(start, exit);
     //path = astar.smoothPath(path);
     std::vector<step> solution;
 
+    // attempts to print a visualization of the path in the maze
     astar.printGrid(path);
 
+    // printing out every coordinate-to-coordinate movement
+    // along with direction, angle, and heading to make movement
     char direction;
     int angle;
     std::string newHeading{"N"};
@@ -84,6 +81,7 @@ int main(int argc, char **argv)
         val.distance = 1;
         solution.push_back(val);
     }
+    // when direction is unchanging combine & erase steps by adding 'distance'
     for (int i = 0; i < solution.size()-1; ++i) {
         if (solution[i].direction == 'F' && solution[i].direction == solution[i+1].direction) {
             solution[i].distance++;
@@ -91,13 +89,13 @@ int main(int argc, char **argv)
             --i;
         }
     }
-
+    // print out these steps
     for (int i = 0; i < solution.size()-1; ++i) {
         std::cout << "step " << i << ": " << "angle: " << solution[i].angle << " direction: " << solution[i].direction << " distance: " << solution[i].distance;
         std::cout << std::endl;
     }
+    // memory cleanup
     astar.cleanupGrid();
-
     return 0;
 }
 
