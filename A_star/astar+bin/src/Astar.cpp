@@ -198,9 +198,6 @@ std::vector<Node*> Astar::algorithm(Node* start, Node* goal) {
     std::vector<Node*> openSet;
     std::vector<Node*> closedSet;
 
-    start = start_node;
-    goal = exit_node;
-
     start->g = 0;
     start->h = heuristic(start->x, start->y, goal->x, goal->y);
     start->f = start->g + start->h;
@@ -243,6 +240,10 @@ std::vector<Node*> Astar::algorithm(Node* start, Node* goal) {
 
 // current assumption in determining the start is it is the first non-obstacle in the bottom row
 Node* Astar::determineStartNode(int inputX, int inputY) {
+    if (start_node != nullptr) {
+        return start_node;
+    }
+
     if (inputX || inputY) {
         grid[inputY][inputX]->start = true;
         return grid[inputY][inputX];
@@ -261,6 +262,10 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
 
 // current assumption in determining the goal is it is the first non-obstacle in the top row
 Node* Astar::determineGoalNode(int exitX, int exitY) {
+    if (exit_node != nullptr) {
+        return exit_node;
+    }
+
     if (exitX || exitY) {
         grid[exitY][exitX]->exit = true;
         return grid[exitY][exitX];
