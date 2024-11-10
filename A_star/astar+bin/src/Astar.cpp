@@ -318,3 +318,46 @@ void Astar::printGrid(const std::vector<Node*>& path) {
         throw std::runtime_error("Error occurred while closing the file");
     }
 }
+
+// calculates the angle needed to go from one cardinal direction to another
+step calculateTurn(Heading from, Heading to){
+    if (from == to){
+        return {Turn::FORWARD, 0};
+    }
+        
+    int diff = (static_cast<int>(to) - static_cast<int>(from) + 8) % 8;
+    bool turnRight = diff <= 4;
+    int angle = diff * 45;
+    
+    // i.e. from: E, to N (left turn): diff = 6
+    // (8-6) * 45 = 90
+    if (!turnRight) {
+        angle = (8 - diff) * 45;
+    }
+    
+    return {turnRight ? Turn::RIGHT : Turn::LEFT, angle};
+}
+
+
+step calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHead) {
+    int dx = x2 - x1;
+    int dy = y1 - y2;
+
+    Heading newHead = Heading::N;
+    static constexpr std::array<std::pair<int,int>, 8> DIRVECT = {{
+        {0, 1},   // N
+        {1, 1},   // NE
+        {1, 0},   // E
+        {1, -1},  // SE
+        {0, -1},  // S
+        {-1, -1}, // SW
+        {-1, 0},  // W
+        {-1, 1}   // NW
+    }};
+    for (size_t i = 0; i < DIRVECT.size(); ++i) {
+        if (DIRVECT[i] == std::make_pair(dx, dy)) {
+            newHead = static_cast<Heading>(i);
+        }
+    }
+    return calculateTurn(currHead, newHead);
+}
