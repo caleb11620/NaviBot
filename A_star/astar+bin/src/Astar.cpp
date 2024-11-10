@@ -10,7 +10,7 @@
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
 
-void Astar::interpretBitmap(const std::vector<std::vector<bool>>& bmp) {
+void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     printf("AStar::Interpreting bitmap...\n");
     printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
@@ -29,7 +29,15 @@ void Astar::interpretBitmap(const std::vector<std::vector<bool>>& bmp) {
     initializeGrid();
     for (int y{0}; y < aHeight; ++y) {
         for (int x{0}; x < aWidth; ++x) {
-            grid[y][x]->isObstacle = bmp[y][x];
+            if (bmp[y][x] == 1){
+                grid[y][x]->isObstacle = true;
+            } else if (bmp[y][x] == 2){
+                grid[y][x]->start = true;
+                start_node = grid[y][x];
+            } else if (bmp[y][x] == 3){
+                grid[y][x]->exit = true;
+                exit_node = grid[y][x];
+            }
         }
     }
 }
@@ -232,6 +240,10 @@ std::vector<Node*> Astar::algorithm(Node* start, Node* goal) {
 
 // current assumption in determining the start is it is the first non-obstacle in the bottom row
 Node* Astar::determineStartNode(int inputX, int inputY) {
+    if (start_node != nullptr) {
+        return start_node;
+    }
+
     if (inputX || inputY) {
         grid[inputY][inputX]->start = true;
         return grid[inputY][inputX];
@@ -250,6 +262,10 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
 
 // current assumption in determining the goal is it is the first non-obstacle in the top row
 Node* Astar::determineGoalNode(int exitX, int exitY) {
+    if (exit_node != nullptr) {
+        return exit_node;
+    }
+
     if (exitX || exitY) {
         grid[exitY][exitX]->exit = true;
         return grid[exitY][exitX];
@@ -317,4 +333,52 @@ void Astar::printGrid(const std::vector<Node*>& path) {
     if (outFile.fail()) {
         throw std::runtime_error("Error occurred while closing the file");
     }
+}
+
+// calculates the angle needed to go from one cardinal direction to another
+step Astar::calculateTurn(Heading from, Heading to){
+    if (from == to){
+        return {Turn::FORWARD, 0};
+    }
+        
+    int diff = (static_cast<int>(to) - static_cast<int>(from) + 8) % 8;
+    bool turnRight = diff <= 4;
+    int angle = diff * 45;
+    
+    // i.e. from: E, to N (left turn): diff = 6
+    // (8-6) * 45 = 90
+    if (!turnRight) {
+        angle = (8 - diff) * 45;
+    }
+    
+    return {turnRight ? Turn::RIGHT : Turn::LEFT, angle};
+}
+
+
+std::tuple<Turn, int, Heading> Astar::calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHead) {
+    int dx = x2 - x1;
+    int dy = y1 - y2;
+
+    Heading newHead = Heading::N;
+    static constexpr std::array<std::pair<int,int>, 8> DIRVECT = {{
+        {0, 1},   // N
+        {1, 1},   // NE
+        {1, 0},   // E
+        {1, -1},  // SE
+        {0, -1},  // S
+        {-1, -1}, // SW
+        {-1, 0},  // W
+        {-1, 1}   // NW
+    }};
+    for (size_t i = 0; i < DIRVECT.size(); ++i) {
+        if (DIRVECT[i] == std::make_pair(dx, dy)) {
+            newHead = static_cast<Heading>(i);
+        }
+    }
+    step change = calculateTurn(currHead, newHead);
+    return {
+        change.turn,
+        change.angle,
+        newHead
+    };
 }

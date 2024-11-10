@@ -14,7 +14,7 @@ const int MAX_HEIGHT = 400;
 class Bitmap
 {
     private:
-        std::vector<std::vector<bool>> data;
+        std::vector<std::vector<int>> data;
 
         int intWidth {MAX_WIDTH};
         int intHeight {MAX_HEIGHT};
@@ -24,7 +24,7 @@ class Bitmap
 
         int getWidth() const { return intWidth; }
         int getHeight() const { return intHeight; }
-        std::vector<std::vector<bool>> getData() const { return data; }
+        std::vector<std::vector<int>> getData() const { return data; }
 
         int getPixel(int x, int y);
         bool read(const std::string &filename);

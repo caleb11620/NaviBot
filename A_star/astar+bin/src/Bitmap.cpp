@@ -1,11 +1,11 @@
 #include "../include/Bitmap.hpp"
 
 // constructor
-Bitmap::Bitmap() : data(MAX_HEIGHT, std::vector<bool>(MAX_WIDTH, false)) {}
+Bitmap::Bitmap() : data(MAX_HEIGHT, std::vector<int>(MAX_WIDTH, 0)) {}
 
 int Bitmap::getPixel(int x, int y)
 {
-    return data[y][x] ? 1 : 0;
+    return data[y][x];
 }
 
 bool Bitmap::read(const std::string &filename)
@@ -23,7 +23,7 @@ bool Bitmap::read(const std::string &filename)
         {
             char c;
             file >> c;
-            data[y][x] = (c == '1');
+            data[y][x] = c - '0'; // convert char to int
         }
     }
 
@@ -68,7 +68,7 @@ std::vector<int> Bitmap::findEmptyRows()
     {
         for (int x = 0; x < MAX_WIDTH; ++x)
         {
-            if (data[y][x])
+            if (data[y][x] != 0)
             {
                 emptyRows[y] = 1;
                 break;
@@ -85,7 +85,7 @@ std::vector<int> Bitmap::findEmptyCols()
     {
         for (int y = 0; y < MAX_HEIGHT; ++y)
         {
-            if (data[y][x])
+            if (data[y][x] != 0)
             {
                 emptyCols[x] = 1;
                 break;
@@ -104,7 +104,7 @@ void Bitmap::removeEmptyRowsAndColumns()
     // Remove empty rows
     data.erase(
         std::remove_if(data.begin(), data.end(),
-            [&nonEmptyRows, this](const std::vector<bool>& row) {
+            [&nonEmptyRows, this](const std::vector<int>& row) {
                 return nonEmptyRows[&row - &data[0]] == 0;
             }),
         data.end()
