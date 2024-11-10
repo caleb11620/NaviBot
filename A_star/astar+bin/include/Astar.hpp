@@ -35,8 +35,8 @@ struct Node {
 // step-by-step instructions for solution
 struct step {
     // how to physically get to the next location
-    Turn turn;          // which way to turn (or not, stay forward) relative to bot
-    int angle;          // how far to turn
+    Turn turn;  // which way to turn (or not, stay forward) relative to bot
+    int angle;              // how far to turn
 };
 class Astar {
     private:
@@ -65,9 +65,8 @@ class Astar {
         Node* determineGoalNode(int exitX, int exitY);
         void printGrid(const std::vector<Node*>& path);
 
-        step calculateTurn(Heading from, Heading to);
-        step calculateSolutionVars(int x1, int y1, int x2, int y2,
-            Heading currHeading);
+        static step calculateTurn(Heading from, Heading to);
+        static std::tuple<Turn, int, Heading>calculateSolutionVars(int x1, int y1, int x2, int y2, Heading currHeading);
 };
 
 #endif // ASTAR_HPP
