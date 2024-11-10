@@ -9,11 +9,11 @@
 
 std::tuple<char, int, std::string> calculateDirectionAngleAndHeading(int x1, int y1, int x2, int y2, const std::string& currentHeading);
 
-//struct step {
-    //int angle;
-    //int distance {1};
-    //char direction;
-//};
+struct outcome {
+    Turn turn;
+    int angle;
+    int distance {1};
+};
 
 int main(int argc, char **argv)
 {
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     astar.setHeuristicType(HeuristicType::MANHATTAN);
     std::vector<Node*> path = astar.algorithm(start, exit);
     //path = astar.smoothPath(path);
-    std::vector<step> solution;
+    std::vector<outcome> solution;
 
     // attempts to print a visualization of the path in the maze
     astar.printGrid(path);
@@ -67,10 +67,12 @@ int main(int argc, char **argv)
     Heading newHead = Heading::N;
     Heading head = newHead;
     for (int i = 0 ; i < path.size()-1; ++i) {
+        std::cout << "(" << path[i]->x << "," << path[i]->y << ")";
         std::cout << " -> " << "(" << path[i+1]->x << "," << path[i+1]->y << ") ";
-        step val = astar.calculateSolutionVars(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, head);
-        head = newHead;
-        std::cout << "Direction: " << val.turn << ", Angle: " << val.angle << ", New Heading: " << newHead << std::endl;
+        auto [direction, angle, newHeading] = astar.calculateSolutionVars(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, head);
+        head = newHeading;
+        std::cout << "Direction: " << static_cast<char>(direction) << ", Angle: " << angle << std::endl;
+        outcome val = {direction, angle, 1};
         solution.push_back(val);
     }
     // when direction is unchanging combine & erase steps by adding 'distance'
@@ -83,65 +85,10 @@ int main(int argc, char **argv)
     }
     // print out these steps
     for (int i = 0; i < solution.size()-1; ++i) {
-        std::cout << "step " << i << ": " << "angle: " << solution[i].angle << " direction: " << solution[i].direction << " distance: " << solution[i].distance;
+        std::cout << "step " << i << ": " << "angle: " << solution[i].angle << " direction: " << static_cast<char>(solution[i].turn) << " distance: " << solution[i].distance;
         std::cout << std::endl;
     }
     // memory cleanup
     astar.cleanupGrid();
     return 0;
-}
-
-std::tuple<char, int, std::string> calculateDirectionAngleAndHeading(int x1, int y1, int x2, int y2, const std::string& currentHeading) {
-    int dx = x2 - x1;
-    int dy = (y1 - y2);  // Invert y-axis if needed
-    
-    // Define movement types
-    const std::map<std::pair<int, int>, std::string> movements = {
-        {{0, 1}, "N"}, {{1, 1}, "NE"}, {{1, 0}, "E"}, {{1, -1}, "SE"},
-        {{0, -1}, "S"}, {{-1, -1}, "SW"}, {{-1, 0}, "W"}, {{-1, 1}, "NW"}
-    };
-    
-    // Find the new heading
-    auto it = movements.find({dx, dy});
-    if (it == movements.end()) {
-        return {'X', -1, currentHeading};  // Invalid movement
-    }
-    std::string newHeading = it->second;
-    
-    // If the heading hasn't changed, it's a forward movement
-    if (newHeading == currentHeading) {
-        return {'F', 0, newHeading};
-    }
-    
-    // Define the angle differences between directions
-    const std::map<std::pair<std::string, std::string>, std::pair<char, int>> directionChanges = {
-        {{"N", "NE"}, {'R', 45}},  {{"N", "E"}, {'R', 90}},   {{"N", "SE"}, {'R', 135}},
-        {{"N", "S"}, {'R', 180}},  {{"N", "SW"}, {'L', 135}}, {{"N", "W"}, {'L', 90}},
-        {{"N", "NW"}, {'L', 45}},  {{"NE", "E"}, {'R', 45}},  {{"NE", "SE"}, {'R', 90}},
-        {{"NE", "S"}, {'R', 135}}, {{"NE", "SW"}, {'R', 180}},{{"NE", "W"}, {'L', 135}},
-        {{"NE", "NW"}, {'L', 90}}, {{"NE", "N"}, {'L', 45}},  {{"E", "SE"}, {'R', 45}},
-        {{"E", "S"}, {'R', 90}},   {{"E", "SW"}, {'R', 135}}, {{"E", "W"}, {'R', 180}},
-        {{"E", "NW"}, {'L', 135}}, {{"E", "N"}, {'L', 90}},   {{"E", "NE"}, {'L', 45}},
-        {{"SE", "S"}, {'R', 45}},  {{"SE", "SW"}, {'R', 90}}, {{"SE", "W"}, {'R', 135}},
-        {{"SE", "NW"}, {'R', 180}},{{"SE", "N"}, {'L', 135}}, {{"SE", "NE"}, {'L', 90}},
-        {{"SE", "E"}, {'L', 45}},  {{"S", "SW"}, {'R', 45}},  {{"S", "W"}, {'R', 90}},
-        {{"S", "NW"}, {'R', 135}}, {{"S", "N"}, {'R', 180}},  {{"S", "NE"}, {'L', 135}},
-        {{"S", "E"}, {'L', 90}},   {{"S", "SE"}, {'L', 45}},  {{"SW", "W"}, {'R', 45}},
-        {{"SW", "NW"}, {'R', 90}}, {{"SW", "N"}, {'R', 135}}, {{"SW", "NE"}, {'R', 180}},
-        {{"SW", "E"}, {'L', 135}}, {{"SW", "SE"}, {'L', 90}}, {{"SW", "S"}, {'L', 45}},
-        {{"W", "NW"}, {'R', 45}},  {{"W", "N"}, {'R', 90}},   {{"W", "NE"}, {'R', 135}},
-        {{"W", "E"}, {'R', 180}},  {{"W", "SE"}, {'L', 135}}, {{"W", "S"}, {'L', 90}},
-        {{"W", "SW"}, {'L', 45}},  {{"NW", "N"}, {'R', 45}},  {{"NW", "NE"}, {'R', 90}},
-        {{"NW", "E"}, {'R', 135}}, {{"NW", "SE"}, {'R', 180}},{{"NW", "S"}, {'L', 135}},
-        {{"NW", "SW"}, {'L', 90}}, {{"NW", "W"}, {'L', 45}}
-    };
-    
-    // Find the direction change
-    auto change = directionChanges.find({currentHeading, newHeading});
-    if (change != directionChanges.end()) {
-        return {change->second.first, change->second.second, newHeading};
-    }
-    
-    // If no change found (shouldn't happen with a complete directionChanges map)
-    return {'X', -1, newHeading};
 }
