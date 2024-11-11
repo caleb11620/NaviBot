@@ -191,28 +191,30 @@ void setup() {
     case 111: // ASTAR
     {
       initializeSD();
+      Serial.println("Init SD");
       analogWrite(RED, 100);
       analogWrite(GREEN, 256);
       analogWrite(BLUE, 256);
       Bitmap bmp;
       Astar astar;
-      // TODO: REPLACE WITH ACTUAL MAZE MAP FILE NAME
       Map = SD.open("/Map.bin", FILE_READ);
       bmp.read(Map);
       Map.close();
-      bmp.removeEmptyRowsAndColumns();
 
       auto astardata = bmp.getData();
       astar.interpretBitmap(astardata);
+      Serial.println("a* interpret data");
 
       Node* start = astar.determineStartNode();
-      Node* exit = astar.determineGoalNode();
+      Node* Goal = astar.determineGoalNode();
+
+      Serial.println("map determined start and goal node");
 
       // HEURISTIC TYPES: MANHATTAN, EUCLIDEAN, CHEBYSHEV, OCTILE,
       // MANHATTAN: ONLY 90 DEGREE TURNS
       // EUCLIDEAN, CHEBYSHEV, OCTILE: REQUIRES 45 DEGREE TURNS
       astar.setHeuristicType(HeuristicType::MANHATTAN);
-      std::vector<Node*> path = astar.algorithm(start, exit);
+      std::vector<Node*> path = astar.algorithm(start, Goal);
       
       Heading head = Heading::N;
       //Turn direction;
@@ -486,7 +488,7 @@ void Motor(int command, int leftspeed, int rightspeed) {
 
 long location;
 long calcLoc(float x_loc, float y_loc) {
-  location = ceil(x_loc) + (ceil(y_loc) * 401);
+  location = ceil(x_loc) + (ceil(y_loc) * 400);
   if (location < 0) {
     location = location * -1;
   }
@@ -496,8 +498,8 @@ long calcLoc(float x_loc, float y_loc) {
 void initializeGrid() {
   Map = SD.open("/Map.bin", FILE_WRITE);
   if (Map) {
-    for (int i = 0; i < 400; i++) {
-      for (int j = 0; j < 400; j++) {
+    for (int i = 0; i < 399; i++) {
+      for (int j = 0; j < 399; j++) {
         Map.print('1');
       }
       Map.print('\n');
@@ -540,7 +542,7 @@ void RightWallFollow() {
         MemoryLog(true);
       }
     } else {
-      delay(800);
+      delay(900);
       MemoryLog(true);
     }
     turn(85, RIGHT_TURN);
@@ -566,7 +568,7 @@ void LeftWallFollow() {
         MemoryLog(true);
       }
     } else {
-      delay(800);
+      delay(900);
       MemoryLog(true);
     }
     turn(87, LEFT_TURN);
@@ -744,43 +746,4 @@ void initializeCounter() {
 
 void pulse() {
   pulseCount++;
-}
-
-void erode() {
-  MapFiltered = SD.open("/MapFiltered.bin", FILE_WRITE);
-  if (MapFiltered) {
-    for (int i = 0; i < 400; i++) {
-      for (int j = 0; j < 400; j++) {
-        MapFiltered.print('1');
-      }
-      MapFiltered.print('\n');
-    }
-    MapFiltered.seek(calcLoc(199, 199));
-    MapFiltered.print('0');
-  }
-  MapFiltered.close();
-  char val;
-  Map = SD.open("/Map.bin", FILE_READ);
-  if(Map) {
-        for(int i = 1; i < 398; i++) {
-            for(int j = 1; j < 398; j++) {
-                Map.seek(calcLoc(i,j));
-                val = Map.read();
-                if(val=='0') {
-                  Map.close();
-                  MapFiltered = SD.open("/MapFiltered.bin", "r+");
-                  for(int a = -2; a < 2; a++) {
-                        for(int b = -2; b < 2; b++) {
-                            MapFiltered.seek(calcLoc(i+a,j+b));
-                            MapFiltered.print('0');
-                        
-                    }
-                  }
-                  MapFiltered.close();
-                  Map = SD.open("/Map.bin", FILE_READ);
-                }
-            }
-        }
-  }
-  Map.close();
 }
