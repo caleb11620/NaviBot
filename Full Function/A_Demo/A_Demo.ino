@@ -48,8 +48,7 @@ float y = 199;
 const int chipSelect = A0;
 File memoryLog;
 File Map;
-File temp;
-int c = 10;
+File MapFiltered;
 
 
 #define LEFT 1
@@ -113,9 +112,9 @@ void RightWallFollow();
 void LeftWallFollow();
 
 void setup() {
-//  Serial.begin(115200);
-//  while(!Serial);
-//  Serial.println("Serial initialized");
+  Serial.begin(115200);
+  while(!Serial);
+  Serial.println("Serial initialized");
   Wire.begin();
   initializeDIP();
   program = readDIP();
@@ -192,12 +191,15 @@ void setup() {
     case 111: // ASTAR
     {
       initializeSD();
-      //RED LED
+      analogWrite(RED, 100);
+      analogWrite(GREEN, 256);
+      analogWrite(BLUE, 256);
       Bitmap bmp;
       Astar astar;
       // TODO: REPLACE WITH ACTUAL MAZE MAP FILE NAME
-      //bmp.read(/*MAZE_FILE_NAME_HERE*/);
-      ///*MAZE_FILE_NAME_HERE*/.close();
+      Map = SD.open("/Map.bin", FILE_READ);
+      bmp.read(Map);
+      Map.close();
       bmp.removeEmptyRowsAndColumns();
 
       auto astardata = bmp.getData();
@@ -214,7 +216,7 @@ void setup() {
       
       Heading head = Heading::N;
       for (int i = 0; i < path.size()-1; ++i) {
-        auto [direction, angle, newHeading] = astar.calculateSolutionVars(path[i]->x, path[i]->y,
+        auto {direction, angle, newHeading} = astar.calculateSolutionVars(path[i]->x, path[i]->y,
           path[i+1]->x, path[i+1]->y, head);
         head = newHeading;
         outcome val = {direction, angle, 1};
@@ -229,7 +231,9 @@ void setup() {
         }
       }
       astar.cleanupGrid();
-      //GREEN LED
+      analogWrite(RED, 256);
+      analogWrite(GREEN, 100);
+      analogWrite(BLUE, 256);
       initializeMotor();
       initializeGyro();
       initializeIR(); 
@@ -289,7 +293,7 @@ void loop() {
         }
 
         pulseCount = 0;
-        while (pulseCount < distance) {
+        while (pulseCount < runDistance) {
           Motor(FWD, 56, 61);
         }
       }
@@ -374,8 +378,6 @@ void initializeSD() {
     //Serial.println("Initialization Failure...Check wiring");
     while (1) {}
   }
-  memoryLog = SD.open("/Log.txt", FILE_WRITE);
-  memoryLog.close();
 }
 
 float scanGyro() {
@@ -494,12 +496,12 @@ void initializeGrid() {
   if (Map) {
     for (int i = 0; i < 400; i++) {
       for (int j = 0; j < 400; j++) {
-        Map.print('0');
+        Map.print('1');
       }
       Map.print('\n');
     }
     Map.seek(calcLoc(199, 199));
-    Map.print('1');
+    Map.print('0');
   }
   Map.close();
 }
@@ -543,9 +545,6 @@ void RightWallFollow() {
     pulseCount = 0;
   } else if (rightDistance < 13) {
     computePD();
-    temp = SD.open("/temp.txt", FILE_APPEND);
-    temp.println(rightDistance);
-    temp.close();
     Motor(FWD, leftSpeed, rightSpeed);
     MemoryLog(true);
   }
@@ -572,9 +571,6 @@ void LeftWallFollow() {
     pulseCount = 0;
   } else if (leftDistance < 13) {
     computePD();
-    temp = SD.open("/temp.txt", FILE_APPEND);
-    temp.println(leftDistance);
-    temp.close();
     Motor(FWD, leftSpeed, rightSpeed);
     MemoryLog(true);
   }
@@ -668,11 +664,21 @@ float toRads(float Angle) {
   return (Angle / 180) * PI;
 }
 
+float angleCorrection(float angle) {
+    int mult = round(angle / 90);
+    angle = mult * 90;
+    return angle;
+}
+
 void Map_Update(int Lsensor, int Csensor, int Rsensor, float angle, int distance) {
-  //  Map_Move(distance, angle);
+  angle = -1*angleCorrection(angle);
+  if(Csensor > 4) {Csensor = 4;}
+  if(Lsensor > 4) {Lsensor = 4;}
+  if(Rsensor > 4) {Rsensor = 4;}
   Map_IR(1, Lsensor, angle);
   Map_IR(2, Csensor, angle);
   Map_IR(3, Rsensor, angle);
+  Map_Move(distance*2, angle);
 }
 
 void Map_Move(int distance, float angle) {
@@ -680,21 +686,20 @@ void Map_Move(int distance, float angle) {
     x = x + cos(toRads(angle));
     y = y + sin(toRads(angle));
     Map.seek(calcLoc(x, y));
-    Map.print('1');
+    Map.print('0');
   }
 }
 
 void Map_IR(int sensor, int distance, float angle) {
   float prex = x;
   float prey = y;
-  distance = distance + c;
   for (int i = 0; i < distance; i++) {
     x = x + cos(toRads(angle - (45 * (sensor - 2))));
     y = y + sin(toRads(angle - (45 * (sensor - 2))));
     if (x > 0 && x < 399) {
       if (y > 0 && y < 399) {
         Map.seek(calcLoc(x, y));
-        Map.print('1');
+        Map.print('0');
       }
     }
   }
@@ -705,7 +710,7 @@ void Map_IR(int sensor, int distance, float angle) {
 float MapData[5];
 void Make_A_Map() {
   initializeGrid();
-  memoryLog = SD.open("/Log.txt");
+  memoryLog = SD.open("/Log.txt", FILE_READ);
   String s;
   int i = 0;
   int loc = 0;
@@ -726,7 +731,9 @@ void Make_A_Map() {
       break;
     }
   }
+  memoryLog.close();
   Map.close();
+  //erode();
 }
 
 void initializeCounter() {
@@ -735,4 +742,43 @@ void initializeCounter() {
 
 void pulse() {
   pulseCount++;
+}
+
+void erode() {
+  MapFiltered = SD.open("/MapFiltered.bin", FILE_WRITE);
+  if (MapFiltered) {
+    for (int i = 0; i < 400; i++) {
+      for (int j = 0; j < 400; j++) {
+        MapFiltered.print('1');
+      }
+      MapFiltered.print('\n');
+    }
+    MapFiltered.seek(calcLoc(199, 199));
+    MapFiltered.print('0');
+  }
+  MapFiltered.close();
+  char val;
+  Map = SD.open("/Map.bin", FILE_READ);
+  if(Map) {
+        for(int i = 1; i < 398; i++) {
+            for(int j = 1; j < 398; j++) {
+                Map.seek(calcLoc(i,j));
+                val = Map.read();
+                if(val=='0') {
+                  Map.close();
+                  MapFiltered = SD.open("/MapFiltered.bin", "r+");
+                  for(int a = -2; a < 2; a++) {
+                        for(int b = -2; b < 2; b++) {
+                            MapFiltered.seek(calcLoc(i+a,j+b));
+                            MapFiltered.print('0');
+                        
+                    }
+                  }
+                  MapFiltered.close();
+                  Map = SD.open("/Map.bin", FILE_READ);
+                }
+            }
+        }
+  }
+  Map.close();
 }
