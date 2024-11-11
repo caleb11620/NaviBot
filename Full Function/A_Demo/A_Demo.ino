@@ -215,9 +215,11 @@ void setup() {
       std::vector<Node*> path = astar.algorithm(start, exit);
       
       Heading head = Heading::N;
+      //Turn direction;
+      Heading newHeading;
+      //int angle;
       for (int i = 0; i < path.size()-1; ++i) {
-        auto {direction, angle, newHeading} = astar.calculateSolutionVars(path[i]->x, path[i]->y,
-          path[i+1]->x, path[i+1]->y, head);
+        auto [direction, angle, newHeading] = astar.calculateSolutionVars(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, head);
         head = newHeading;
         outcome val = {direction, angle, 1};
         solution.push_back(val);
