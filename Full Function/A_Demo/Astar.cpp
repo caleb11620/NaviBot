@@ -6,27 +6,31 @@
 #include <cmath>
 //TODO: replace path_output fstream with something that prints to SD
 #include <fstream>
+#include "Arduino.h"
 
 // constructor
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
 
 void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
-    printf("AStar::Interpreting bitmap...\n");
-    printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
+    Serial.printf("AStar::Interpreting bitmap...\n");
+    Serial.printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
     // printing out the bitmap to make sure function sees it
     for (const auto& row : bmp) {
         for (bool pixel : row) {
-            printf("%d", pixel);
+            Serial.printf("%d", pixel);
         }
-        printf("\n");
+        Serial.printf("\n");
     }
 
+    Serial.println("5: Astar::interpretBitmap");
     // adjusted width and height
     aWidth = bmp[0].size();
     aHeight = bmp.size();
+    Serial.printf("aWidth: %d, aHeight: %d", aWidth, aHeight);
 
+    Serial.println("initializeGrid");
     initializeGrid();
     for (int y{0}; y < aHeight; ++y) {
         for (int x{0}; x < aWidth; ++x) {
@@ -45,9 +49,14 @@ void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
 
 void Astar::initializeGrid() {
     grid.resize(aHeight, std::vector<Node*>(aWidth, nullptr));
+    Serial.println("grid.resize passed");
 
     for (int y = 0; y < aHeight; ++y) {
         for (int x = 0; x < aWidth; ++x) {
+            //Serial.print("x: ");
+            //Serial.print(x);
+            //Serial.print(" y: ");
+            //Serial.println(y);
             grid[y][x] = new Node(x, y);
         }
     }
