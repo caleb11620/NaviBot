@@ -61,59 +61,72 @@ void Bitmap::invertPixel(int x, int y)
     }
 }
 
-std::vector<int> Bitmap::findEmptyRows()
-{
+std::vector<int> Bitmap::findEmptyRows() {
     std::vector<int> emptyRows(MAX_HEIGHT, 0);
-    for (int y = 0; y < MAX_HEIGHT; ++y)
-    {
-        for (int x = 0; x < MAX_WIDTH; ++x)
-        {
-            if (data[y][x] != 0)
-            {
-                emptyRows[y] = 1;
-                break;
+    for (int y = 0; y < MAX_HEIGHT; ++y) {
+        bool allZeros = true;
+        bool allOnes = true;
+        
+        for (int x = 0; x < MAX_WIDTH; ++x) {
+            if (data[y][x] != 0) {
+                allZeros = false;
             }
+            if (data[y][x] != 1) {
+                allOnes = false;
+            }
+            if (!allZeros && !allOnes) break;
+        }
+        
+        // Mark row for removal if it's all zeros or all ones
+        if (allZeros || allOnes) {
+            emptyRows[y] = 1;
         }
     }
     return emptyRows;
-} 
+}
 
-std::vector<int> Bitmap::findEmptyCols()
-{
+std::vector<int> Bitmap::findEmptyCols() {
     std::vector<int> emptyCols(MAX_WIDTH, 0);
-    for (int x = 0; x < MAX_WIDTH; ++x)
-    {
-        for (int y = 0; y < MAX_HEIGHT; ++y)
-        {
-            if (data[y][x] != 0)
-            {
-                emptyCols[x] = 1;
-                break;
+    for (int x = 0; x < MAX_WIDTH; ++x) {
+        bool allZeros = true;
+        bool allOnes = true;
+        
+        for (int y = 0; y < MAX_HEIGHT; ++y) {
+            if (data[y][x] != 0) {
+                allZeros = false;
             }
+            if (data[y][x] != 1) {
+                allOnes = false;
+            }
+            if (!allZeros && !allOnes) break;
+        }
+        
+        // Mark column for removal if it's all zeros or all ones
+        if (allZeros || allOnes) {
+            emptyCols[x] = 1;
         }
     }
     return emptyCols;
 }
 
-// Removes any row or column that is entirely 0
-void Bitmap::removeEmptyRowsAndColumns()
-{
-    std::vector<int> nonEmptyRows = findEmptyRows();
-    std::vector<int> nonEmptyCols = findEmptyCols();
+// Removes any row or column that is entirely 0 or entirely 1
+void Bitmap::removeEmptyRowsAndColumns() {
+    std::vector<int> rowsToRemove = findEmptyRows();
+    std::vector<int> colsToRemove = findEmptyCols();
 
-    // Remove empty rows
+    // Remove marked rows
     data.erase(
         std::remove_if(data.begin(), data.end(),
-            [&nonEmptyRows, this](const std::vector<int>& row) {
-                return nonEmptyRows[&row - &data[0]] == 0;
+            [&rowsToRemove, this](const std::vector<int>& row) {
+                return rowsToRemove[&row - &data[0]] == 1;
             }),
         data.end()
     );
 
-    // Remove empty columns
+    // Remove marked columns
     for (auto& row : data) {
         for (int x = intWidth - 1; x >= 0; --x) {
-            if (nonEmptyCols[x] == 0) {
+            if (colsToRemove[x] == 1) {
                 row.erase(row.begin() + x);
             }
         }
