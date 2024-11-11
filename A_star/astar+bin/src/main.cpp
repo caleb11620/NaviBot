@@ -14,6 +14,10 @@ struct outcome {
     int angle;
     int distance {1};
 };
+struct metrics {
+    int numTurns;
+    int distanceTravelled;
+} track;
 
 int main(int argc, char **argv)
 {
@@ -42,19 +46,14 @@ int main(int argc, char **argv)
     int inY = 0;
     int exitX = 0;
     int exitY = 0;
-    if (argc == 6) {
-        inX = std::stoi(argv[2]);
-        inY = std::stoi(argv[3]);
-        exitX = std::stoi(argv[4]);
-        exitY = std::stoi(argv[5]);
-    }
     Node* start = astar.determineStartNode(inX, inY);
     Node* exit = astar.determineGoalNode(exitX, exitY);
     std::cout << "startNode x:" << start->x << " y:" << start->y << std::endl;
     std::cout << "exitNode x:" << exit->x << " y:" << exit->y << std::endl;
 
     // set heuristic (cost for movement/path determination) and start alg.
-    astar.setHeuristicType(HeuristicType::MANHATTAN);
+    HeuristicType type = static_cast<HeuristicType>(std::stoi(argv[2]));
+    astar.setHeuristicType(type);
     std::vector<Node*> path = astar.algorithm(start, exit);
     //path = astar.smoothPath(path);
     std::vector<outcome> solution;
@@ -87,7 +86,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < solution.size()-1; ++i) {
         std::cout << "step " << i << ": " << "angle: " << solution[i].angle << " direction: " << static_cast<char>(solution[i].turn) << " distance: " << solution[i].distance;
         std::cout << std::endl;
+        track.distanceTravelled += solution[i].distance;
+        if (static_cast<char>(solution[i].turn) != 'F')
+            track.numTurns++;
     }
+    std::cout << "metrics:\n dt: " << track.distanceTravelled << "\n nt: " << track.numTurns;
     // memory cleanup
     astar.cleanupGrid();
     return 0;
