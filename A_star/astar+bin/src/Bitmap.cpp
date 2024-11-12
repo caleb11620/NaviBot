@@ -44,7 +44,7 @@ bool Bitmap::write(const std::string &filename)
     {
         for (int x = 0; x < intWidth; ++x)
         {
-            file << (data[y][x] ? '1' : '0');
+            file << (data[y][x]);
         }
         file << std::endl;
     }
@@ -62,7 +62,7 @@ void Bitmap::invertPixel(int x, int y)
 }
 
 std::vector<int> Bitmap::findEmptyRows() {
-    std::vector<int> emptyRows(MAX_HEIGHT, 0);
+    std::vector<int> rowsToRemove(MAX_HEIGHT, 0);
     for (int y = 0; y < MAX_HEIGHT; ++y) {
         bool allZeros = true;
         bool allOnes = true;
@@ -77,16 +77,15 @@ std::vector<int> Bitmap::findEmptyRows() {
             if (!allZeros && !allOnes) break;
         }
         
-        // Mark row for removal if it's all zeros or all ones
         if (allZeros || allOnes) {
-            emptyRows[y] = 1;
+            rowsToRemove[y] = 1;
         }
     }
-    return emptyRows;
+    return rowsToRemove;
 }
 
 std::vector<int> Bitmap::findEmptyCols() {
-    std::vector<int> emptyCols(MAX_WIDTH, 0);
+    std::vector<int> colsToRemove(MAX_WIDTH, 0);
     for (int x = 0; x < MAX_WIDTH; ++x) {
         bool allZeros = true;
         bool allOnes = true;
@@ -101,38 +100,38 @@ std::vector<int> Bitmap::findEmptyCols() {
             if (!allZeros && !allOnes) break;
         }
         
-        // Mark column for removal if it's all zeros or all ones
         if (allZeros || allOnes) {
-            emptyCols[x] = 1;
+            colsToRemove[x] = 1;
         }
     }
-    return emptyCols;
+    return colsToRemove;
 }
 
-// Removes any row or column that is entirely 0 or entirely 1
 void Bitmap::removeEmptyRowsAndColumns() {
     std::vector<int> rowsToRemove = findEmptyRows();
     std::vector<int> colsToRemove = findEmptyCols();
 
-    // Remove marked rows
-    data.erase(
-        std::remove_if(data.begin(), data.end(),
-            [&rowsToRemove, this](const std::vector<int>& row) {
-                return rowsToRemove[&row - &data[0]] == 1;
-            }),
-        data.end()
-    );
+    // Remove marked rows using index-based removal
+    std::vector<std::vector<int>> newData;
+    for (size_t i = 0; i < data.size(); ++i) {
+        if (rowsToRemove[i] == 0) {  // Keep this row
+            newData.push_back(data[i]);
+        }
+    }
+    data = std::move(newData);
 
     // Remove marked columns
     for (auto& row : data) {
-        for (int x = intWidth - 1; x >= 0; --x) {
-            if (colsToRemove[x] == 1) {
-                row.erase(row.begin() + x);
+        std::vector<int> newRow;
+        for (size_t x = 0; x < row.size(); ++x) {
+            if (colsToRemove[x] == 0) {  // Keep this column
+                newRow.push_back(row[x]);
             }
         }
+        row = std::move(newRow);
     }
 
     // Update dimensions
     intHeight = data.size();
-    intWidth = data[0].size();
+    intWidth = data.empty() ? 0 : data[0].size();
 }
