@@ -573,8 +573,8 @@ void RightWallFollow() {
 
 void LeftWallFollow() {
   scan();
-  if (center <= 5) {
-    turn(85, RIGHT_TURN);
+  if (center < 5) {
+    turn(83, RIGHT_TURN);
     pulseCount = 0;
   } else if (leftDistance >= 20) {
     Motor(FWD, 56, 61);
@@ -645,10 +645,12 @@ void computePD() {
     if (leftDistance < 20) {
       error = leftDistance - 9;
       error_dt = error - prev_error;
-      integral += error;
-      outputD = P * error + D * error_dt + I * integral;
-      leftSpeed = SPEED - outputD;
-      rightSpeed = SPEED + outputD;
+      if(error_dt < 3) {
+        integral += error;
+        outputD = P * error + D * error_dt + I * integral;
+        leftSpeed = SPEED - outputD;
+        rightSpeed = SPEED + outputD;
+      }
       prev_error = error;
     }
   }
