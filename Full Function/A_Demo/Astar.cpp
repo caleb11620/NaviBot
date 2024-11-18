@@ -180,7 +180,8 @@ std::vector<Node*> Astar::getNeighbors(Node* node) {
     return neighbors;
 }
 
-Node* Astar::findLowestF(std::vector<Node*>& openSet) { Node* lowest = openSet[0];
+Node* Astar::findLowestF(std::vector<Node*>& openSet) { 
+    Node* lowest = openSet[0];
     int lowestIndex = 0;
 
     for (int i = 1; i < openSet.size(); ++i) {
