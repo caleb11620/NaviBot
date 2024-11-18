@@ -127,7 +127,7 @@ void setup() {
   #ifdef DEBUG
     Serial.begin(115200);
     while(!Serial);
-    Serial.println("Serial initialized");
+    DEBUG_PRINTLN("Serial initialized");
   #endif
   Wire.begin();
   initializeDIP();
@@ -206,7 +206,7 @@ void setup() {
     case 111: // ASTAR
     {
       initializeSD();
-      Serial.println("Init SD");
+      DEBUG_PRINTLN("Init SD passed");
       analogWrite(RED, 100);
       analogWrite(GREEN, 256);
       analogWrite(BLUE, 256);
