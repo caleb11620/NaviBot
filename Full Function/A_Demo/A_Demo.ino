@@ -251,7 +251,7 @@ void setup() {
           --i;
         }
       }
-      astar.cleanupGrid();
+      astar.cleanup();
       analogWrite(RED, 256);
       analogWrite(GREEN, 100);
       analogWrite(BLUE, 256);
