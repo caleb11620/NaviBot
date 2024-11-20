@@ -92,6 +92,6 @@ int main(int argc, char **argv)
     }
     std::cout << "metrics:\n dt: " << track.distanceTravelled << "\n nt: " << track.numTurns;
     // memory cleanup
-    astar.cleanupGrid();
+    astar.cleanup();
     return 0;
 }

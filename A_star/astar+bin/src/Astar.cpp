@@ -10,58 +10,59 @@
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
 
+Astar::~Astar() {
+    cleanup();
+}
+
+void Astar::cleanup() {
+    for (Node* node : nodes) {
+        delete node;
+    }
+    nodes.clear();
+    nodeMap.clear();
+    start_node = nullptr;
+    exit_node = nullptr;
+}
+
+Node* Astar::getNode(int x, int y) const {
+    if (x < 0 || x >= aWidth || y < 0 || y >= aHeight) {
+        return nullptr;
+    }
+    auto it = nodeMap.find(coordToIndex(x, y));
+    return (it != nodeMap.end()) ? it->second : nullptr;
+}
+
 void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     printf("AStar::Interpreting bitmap...\n");
     printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
-    // printing out the bitmap to make sure function sees it
-    for (const auto& row : bmp) {
-        for (bool pixel : row) {
-            printf("%d", pixel);
-        }
-        printf("\n");
-    }
-
-    // adjusted width and height
+    cleanup();
     aWidth = bmp[0].size();
     aHeight = bmp.size();
 
-    initializeGrid();
-    for (int y{0}; y < aHeight; ++y) {
-        for (int x{0}; x < aWidth; ++x) {
-            if (bmp[y][x] == 1){
-                grid[y][x]->isObstacle = true;
-            } else if (bmp[y][x] == 2){
-                grid[y][x]->start = true;
-                start_node = grid[y][x];
-            } else if (bmp[y][x] == 3){
-                grid[y][x]->exit = true;
-                exit_node = grid[y][x];
+    // Create nodes only for non-obstacle cells
+    for (int y = 0; y < aHeight; ++y) {
+        for (int x = 0; x < aWidth; ++x) {
+            if (bmp[y][x] != 1) {  // If not an obstacle
+                Node* node = new Node(x, y);
+                
+                if (bmp[y][x] == 2) {
+                    node->start = true;
+                    start_node = node;
+                } else if (bmp[y][x] == 3) {
+                    node->exit = true;
+                    exit_node = node;
+                }
+
+                nodes.push_back(node);
+                nodeMap[coordToIndex(x, y)] = node;
             }
         }
     }
 }
 
-void Astar::initializeGrid() {
-    grid.resize(aHeight, std::vector<Node*>(aWidth, nullptr));
-
-    for (int y = 0; y < aHeight; ++y) {
-        for (int x = 0; x < aWidth; ++x) {
-            grid[y][x] = new Node(x, y);
-        }
-    }
-}
-
-void Astar::cleanupGrid() {
-    for (int y = 0; y < aHeight; ++y) {
-        for (int x = 0; x < aWidth; ++x) {
-            delete grid[y][x];
-        }
-    }
-}
-
 bool Astar::isValid(int x, int y) {
-    return (x >= 0 && x < aWidth && y >= 0 && y < aHeight && !grid[y][x]->isObstacle);
+    return (x >= 0 && x < aWidth && y >= 0 && y < aHeight && getNode(x, y) != nullptr);
 }
 
 float Astar::heuristic(int x1, int y1, int x2, int y2) {
@@ -136,7 +137,7 @@ bool Astar::hasLineOfSight(Node* start, Node* end) {
     dy *= 2;
     
     for (; n > 0; --n) {
-        if (grid[y][x]->isObstacle) return false;
+        if (!getNode(x, y)) return false;  // If no node exists, it's an obstacle
         
         if (error > 0) {
             x += x_inc;
@@ -163,8 +164,9 @@ std::vector<Node*> Astar::getNeighbors(Node* node) {
     for (int i = 0; i < numDirections; ++i) {
         int newX = node->x + dx[i];
         int newY = node->y + dy[i];
-        if (isValid(newX, newY)) {
-            neighbors.push_back(grid[newY][newX]);
+        Node* neighbor = getNode(newX, newY);
+        if (neighbor) {
+            neighbors.push_back(neighbor);
         }
     }
     return neighbors;
@@ -243,21 +245,8 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
     if (start_node != nullptr) {
         return start_node;
     }
-
-    if (inputX || inputY) {
-        grid[inputY][inputX]->start = true;
-        return grid[inputY][inputX];
-    }
-    for (int x = 0; x < aWidth; ++x) {
-        if (!grid[aHeight-1][x]->isObstacle) {
-            grid[aHeight-1][x]->start = true;
-            return grid[aHeight-1][x];
-        }
-    }
-
+    // No valid start found
     return nullptr;
-    //grid[aHeight-1][(aWidth-1)/2]->start = true;
-    //return grid[aHeight-1][(aWidth-1)/2];
 }
 
 // current assumption in determining the goal is it is the first non-obstacle in the top row
@@ -265,74 +254,41 @@ Node* Astar::determineGoalNode(int exitX, int exitY) {
     if (exit_node != nullptr) {
         return exit_node;
     }
-
-    if (exitX || exitY) {
-        grid[exitY][exitX]->exit = true;
-        return grid[exitY][exitX];
-    }
-    for (int x = 0; x < aWidth; ++x) {
-        if (!grid[0][x]->isObstacle) {
-            grid[0][x]->exit = true;
-            return grid[0][x];
-        }
-    }
     // No valid goal found
     return nullptr;
-    //grid[0][(aWidth-1)/2]->exit = true;
-    //return grid[0][(aWidth-1)/2];
 }
 
 void Astar::printGrid(const std::vector<Node*>& path) {
-    // Create display grid
-    char displayGrid[aHeight][aWidth];
-    for (int i{0}; i < aHeight; ++i) {
-        for (int j{0}; j < aWidth; ++j) {
-            displayGrid[i][j] = grid[i][j]->isObstacle ? '1' : '0';
-        }
+    // Create display grid initialized with obstacles ('1')
+    std::vector<std::vector<char>> displayGrid(aHeight, std::vector<char>(aWidth, '1'));
+    
+    // Mark all non-obstacle nodes
+    for (Node* node : nodes) {
+        displayGrid[node->y][node->x] = '0';
     }
 
     // Mark path, start, and goal
     for (size_t i = 0; i < path.size(); ++i) {
-        displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : ((i == path.size() - 1) ? 'G' : '*');
+        displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : 
+            ((i == path.size() - 1) ? 'G' : '*');
     }
 
-    // Print to terminal
-    for (int i = 0; i < aHeight; ++i) {
-        for (int j = 0; j < aWidth; ++j) {
-            std::cout << displayGrid[i][j];
-        }
-        std::cout << std::endl;
-    }
-
-    // Write to binary file
+    // Print and save to file
     std::ofstream outFile("path_output.bin", std::ios::binary);
     if (!outFile) {
         throw std::runtime_error("Failed to open output file");
     }
 
-    try {
-        // Write each row
-        for (int i = 0; i < aHeight; ++i) {
-            // Write row data
-            outFile.write(displayGrid[i], aWidth);
-            
-            // Add newline character after each row except the last
-            if (i < aHeight - 1) {
-                char newline = '\n';
-                outFile.write(&newline, 1);
-            }
+    for (int i = 0; i < aHeight; ++i) {
+        for (int j = 0; j < aWidth; ++j) {
+            std::cout << displayGrid[i][j];
+            outFile.put(displayGrid[i][j]);
         }
-    }
-    catch (const std::exception& e) {
-        outFile.close();
-        throw std::runtime_error("Error writing to file: " + std::string(e.what()));
+        std::cout << std::endl;
+        if (i < aHeight - 1) outFile.put('\n');
     }
 
     outFile.close();
-    
-    if (outFile.fail()) {
-        throw std::runtime_error("Error occurred while closing the file");
-    }
 }
 
 // calculates the angle needed to go from one cardinal direction to another
