@@ -19,18 +19,16 @@ enum class HeuristicType {
     CHEBYSHEV,
     OCTILE
 };
-// representation of every cm2 in map
 struct Node {
     unsigned short int x, y;       // grid coordinates
     float g, h, f;  // A* necessary values
     Node* parent;
-    bool isObstacle;
     bool start;
     bool exit;
 
-    // init
-    Node(int x, int y) : x(x), y(y), g(0.0), h(0.0), f(0.0), parent(nullptr),
-        isObstacle(false), start(false), exit(false){}
+    // Removed isObstacle since we only store non-obstacle nodes
+    Node(int x, int y) : x(x), y(y), g(0.0), h(0.0), f(0.0), 
+        parent(nullptr), start(false), exit(false) {}
 };
 // step-by-step instructions for solution
 struct step {
