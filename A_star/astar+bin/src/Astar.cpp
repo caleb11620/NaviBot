@@ -9,6 +9,21 @@
 // constructor
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
+
+Astar::~Astar() {
+    cleanup();
+}
+
+void Astar::cleanup() {
+    for (Node* node : nodes) {
+        delete node;
+    }
+    nodes.clear();
+    nodeMap.clear();
+    start_node = nullptr;
+    exit_node = nullptr;
+}
+
 Node* Astar::getNode(int x, int y) const {
     if (x < 0 || x >= aWidth || y < 0 || y >= aHeight) {
         return nullptr;
