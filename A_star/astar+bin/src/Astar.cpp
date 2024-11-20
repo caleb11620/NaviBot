@@ -259,56 +259,36 @@ Node* Astar::determineGoalNode(int exitX, int exitY) {
 }
 
 void Astar::printGrid(const std::vector<Node*>& path) {
-    // Create display grid
-    char displayGrid[aHeight][aWidth];
-    for (int i{0}; i < aHeight; ++i) {
-        for (int j{0}; j < aWidth; ++j) {
-            displayGrid[i][j] = grid[i][j]->isObstacle ? '1' : '0';
-        }
+    // Create display grid initialized with obstacles ('1')
+    std::vector<std::vector<char>> displayGrid(aHeight, std::vector<char>(aWidth, '1'));
+    
+    // Mark all non-obstacle nodes
+    for (Node* node : nodes) {
+        displayGrid[node->y][node->x] = '0';
     }
 
     // Mark path, start, and goal
     for (size_t i = 0; i < path.size(); ++i) {
-        displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : ((i == path.size() - 1) ? 'G' : '*');
+        displayGrid[path[i]->y][path[i]->x] = (i == 0) ? 'S' : 
+            ((i == path.size() - 1) ? 'G' : '*');
     }
 
-    // Print to terminal
-    for (int i = 0; i < aHeight; ++i) {
-        for (int j = 0; j < aWidth; ++j) {
-            std::cout << displayGrid[i][j];
-        }
-        std::cout << std::endl;
-    }
-
-    // Write to binary file
+    // Print and save to file
     std::ofstream outFile("path_output.bin", std::ios::binary);
     if (!outFile) {
         throw std::runtime_error("Failed to open output file");
     }
 
-    try {
-        // Write each row
-        for (int i = 0; i < aHeight; ++i) {
-            // Write row data
-            outFile.write(displayGrid[i], aWidth);
-            
-            // Add newline character after each row except the last
-            if (i < aHeight - 1) {
-                char newline = '\n';
-                outFile.write(&newline, 1);
-            }
+    for (int i = 0; i < aHeight; ++i) {
+        for (int j = 0; j < aWidth; ++j) {
+            std::cout << displayGrid[i][j];
+            outFile.put(displayGrid[i][j]);
         }
-    }
-    catch (const std::exception& e) {
-        outFile.close();
-        throw std::runtime_error("Error writing to file: " + std::string(e.what()));
+        std::cout << std::endl;
+        if (i < aHeight - 1) outFile.put('\n');
     }
 
     outFile.close();
-    
-    if (outFile.fail()) {
-        throw std::runtime_error("Error occurred while closing the file");
-    }
 }
 
 // calculates the angle needed to go from one cardinal direction to another
