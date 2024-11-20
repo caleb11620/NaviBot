@@ -9,6 +9,13 @@
 // constructor
 // aWidth and aHeight init 0
 Astar::Astar() : aWidth(0), aHeight(0) {}
+Node* Astar::getNode(int x, int y) const {
+    if (x < 0 || x >= aWidth || y < 0 || y >= aHeight) {
+        return nullptr;
+    }
+    auto it = nodeMap.find(coordToIndex(x, y));
+    return (it != nodeMap.end()) ? it->second : nullptr;
+}
 
 void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     printf("AStar::Interpreting bitmap...\n");
@@ -61,7 +68,7 @@ void Astar::cleanupGrid() {
 }
 
 bool Astar::isValid(int x, int y) {
-    return (x >= 0 && x < aWidth && y >= 0 && y < aHeight && !grid[y][x]->isObstacle);
+    return (x >= 0 && x < aWidth && y >= 0 && y < aHeight && getNode(x, y) != nullptr);
 }
 
 float Astar::heuristic(int x1, int y1, int x2, int y2) {
@@ -136,7 +143,7 @@ bool Astar::hasLineOfSight(Node* start, Node* end) {
     dy *= 2;
     
     for (; n > 0; --n) {
-        if (grid[y][x]->isObstacle) return false;
+        if (!getNode(x, y)) return false;  // If no node exists, it's an obstacle
         
         if (error > 0) {
             x += x_inc;
@@ -163,8 +170,9 @@ std::vector<Node*> Astar::getNeighbors(Node* node) {
     for (int i = 0; i < numDirections; ++i) {
         int newX = node->x + dx[i];
         int newY = node->y + dy[i];
-        if (isValid(newX, newY)) {
-            neighbors.push_back(grid[newY][newX]);
+        Node* neighbor = getNode(newX, newY);
+        if (neighbor) {
+            neighbors.push_back(neighbor);
         }
     }
     return neighbors;
