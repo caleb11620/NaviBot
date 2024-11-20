@@ -36,48 +36,27 @@ void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     printf("AStar::Interpreting bitmap...\n");
     printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
-    // printing out the bitmap to make sure function sees it
-    for (const auto& row : bmp) {
-        for (bool pixel : row) {
-            printf("%d", pixel);
-        }
-        printf("\n");
-    }
-
-    // adjusted width and height
+    cleanup();
     aWidth = bmp[0].size();
     aHeight = bmp.size();
 
-    initializeGrid();
-    for (int y{0}; y < aHeight; ++y) {
-        for (int x{0}; x < aWidth; ++x) {
-            if (bmp[y][x] == 1){
-                grid[y][x]->isObstacle = true;
-            } else if (bmp[y][x] == 2){
-                grid[y][x]->start = true;
-                start_node = grid[y][x];
-            } else if (bmp[y][x] == 3){
-                grid[y][x]->exit = true;
-                exit_node = grid[y][x];
+    // Create nodes only for non-obstacle cells
+    for (int y = 0; y < aHeight; ++y) {
+        for (int x = 0; x < aWidth; ++x) {
+            if (bmp[y][x] != 1) {  // If not an obstacle
+                Node* node = new Node(x, y);
+                
+                if (bmp[y][x] == 2) {
+                    node->start = true;
+                    start_node = node;
+                } else if (bmp[y][x] == 3) {
+                    node->exit = true;
+                    exit_node = node;
+                }
+
+                nodes.push_back(node);
+                nodeMap[coordToIndex(x, y)] = node;
             }
-        }
-    }
-}
-
-void Astar::initializeGrid() {
-    grid.resize(aHeight, std::vector<Node*>(aWidth, nullptr));
-
-    for (int y = 0; y < aHeight; ++y) {
-        for (int x = 0; x < aWidth; ++x) {
-            grid[y][x] = new Node(x, y);
-        }
-    }
-}
-
-void Astar::cleanupGrid() {
-    for (int y = 0; y < aHeight; ++y) {
-        for (int x = 0; x < aWidth; ++x) {
-            delete grid[y][x];
         }
     }
 }
