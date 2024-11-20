@@ -21,7 +21,7 @@ enum class HeuristicType {
 };
 // representation of every cm2 in map
 struct Node {
-    int x, y;       // grid coordinates
+    unsigned short int x, y;       // grid coordinates
     float g, h, f;  // A* necessary values
     Node* parent;
     bool isObstacle;
