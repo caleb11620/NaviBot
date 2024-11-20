@@ -251,21 +251,8 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
     if (start_node != nullptr) {
         return start_node;
     }
-
-    if (inputX || inputY) {
-        grid[inputY][inputX]->start = true;
-        return grid[inputY][inputX];
-    }
-    for (int x = 0; x < aWidth; ++x) {
-        if (!grid[aHeight-1][x]->isObstacle) {
-            grid[aHeight-1][x]->start = true;
-            return grid[aHeight-1][x];
-        }
-    }
-
+    // No valid start found
     return nullptr;
-    //grid[aHeight-1][(aWidth-1)/2]->start = true;
-    //return grid[aHeight-1][(aWidth-1)/2];
 }
 
 // current assumption in determining the goal is it is the first non-obstacle in the top row
@@ -273,21 +260,8 @@ Node* Astar::determineGoalNode(int exitX, int exitY) {
     if (exit_node != nullptr) {
         return exit_node;
     }
-
-    if (exitX || exitY) {
-        grid[exitY][exitX]->exit = true;
-        return grid[exitY][exitX];
-    }
-    for (int x = 0; x < aWidth; ++x) {
-        if (!grid[0][x]->isObstacle) {
-            grid[0][x]->exit = true;
-            return grid[0][x];
-        }
-    }
     // No valid goal found
     return nullptr;
-    //grid[0][(aWidth-1)/2]->exit = true;
-    //return grid[0][(aWidth-1)/2];
 }
 
 void Astar::printGrid(const std::vector<Node*>& path) {
