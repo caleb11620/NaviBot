@@ -210,6 +210,7 @@ void setup() {
       analogWrite(RED, 100);
       analogWrite(GREEN, 256);
       analogWrite(BLUE, 256);
+      printMemoryStats();
       Bitmap bmp;
       Astar astar;
       DEBUG_PRINTLN("1");
@@ -221,8 +222,10 @@ void setup() {
       DEBUG_PRINTLN("3: astardata = bmp.getData");
       auto astardata = bmp.getData();
       DEBUG_PRINTLN("4: call astar.interpretBitmap");
+      printMemoryStats();
       astar.interpretBitmap(astardata);
       DEBUG_PRINTLN("a* interpret data");
+      printMemoryStats();
 
       Node* start = astar.determineStartNode();
       Node* Goal = astar.determineGoalNode();
@@ -235,6 +238,7 @@ void setup() {
       astar.setHeuristicType(HeuristicType::MANHATTAN);
       std::vector<Node*> path = astar.algorithm(start, Goal);
       
+      printMemoryStats();
       Heading head = Heading::N;
       Heading newHeading;
       for (int i = 0; i < path.size()-1; ++i) {
@@ -765,4 +769,16 @@ void initializeCounter() {
 
 void pulse() {
   pulseCount++;
+}
+
+void printMemoryStats() {
+  multi_heap_info_t heapInfo;
+  heap_caps_get_info(&heapInfo, MALLOC_CAP_8BIT);
+
+  DEBUG_PRINTLN("Memory Stats:");
+  DEBUG_PRINTF("Total Allocated Size: %d\n", heapInfo.total_allocated_bytes);
+  DEBUG_PRINTF("Total Free Size: %d\n", heapInfo.total_free_bytes);
+  DEBUG_PRINTF("Largest Free Block: %d\n", heapInfo.largest_free_block);
+  // checking for psram
+  DEBUG_PRINTF("Free PSRAM: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 }
