@@ -27,12 +27,12 @@ bool Bitmap::read(File &file)
 
     file.close();
     // printing
-    for (const auto& row : data) {
-        for (bool pixel : row) {
-            Serial.printf("%d", pixel);
-        }
-        Serial.printf("\n");
-    }
+//    for (const auto& row : data) {
+//        for (bool pixel : row) {
+//            Serial.printf("%d", pixel);
+//        }
+//        Serial.printf("\n");
+//    }
     return true;
 }
 
