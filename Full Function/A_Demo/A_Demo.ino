@@ -271,15 +271,22 @@ void setup() {
       }
       DEBUG_PRINTLN("consecutive FORWARD vars concatenated");
       astar.cleanup();
+      DEBUG_PRINTLN("PASS CLEANUP");
       analogWrite(RED, 256);
       analogWrite(GREEN, 100);
       analogWrite(BLUE, 256);
       initializeMotor();
+      DEBUG_PRINTLN("PASS MOTOR");
       initializeGyro();
+      DEBUG_PRINTLN("PASS GYRO");
       initializeIR(); 
+      DEBUG_PRINTLN("PASS IR");
       waitForStart();
+      DEBUG_PRINTLN("PASS WAIT");
       enterMaze();
+      DEBUG_PRINTLN("PASS ENTER");
       initializeCounter();
+      DEBUG_PRINTLN("PASS COUNTER");
       break;
     }
 
@@ -308,9 +315,11 @@ void loop() {
 
     case 111: // ASTAR
     {
+      DEBUG_PRINTLN("In loop() ASTAR");
       for (int i = 0; i < solution.size()-1; i++) {
         // GET DIRECTION
         char runDirection = static_cast<char>(solution[i].turn);
+        DEBUG_PRINTF("run direction: %c\n", runDirection);
         switch (runDirection) {
           case 'F':
             runDirection = FWD;
@@ -330,6 +339,8 @@ void loop() {
         // GET DISTANCE
         int runDistance = solution[i].distance;
 
+        DEBUG_PRINTF("run angle: %d\n", runAngle);
+        DEBUG_PRINTF("run distance: %d\n", runDistance);
         if (runDirection != FWD) {
           turn(runAngle, runDirection);
         }
