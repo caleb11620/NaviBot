@@ -16,23 +16,37 @@ bool Bitmap::read(File &file)
         return false;
     }
 
-    for (int y = 0; y < MAX_HEIGHT; ++y)
-    {
-        for (int x = 0; x < MAX_WIDTH; ++x)
-        {
-            char c = file.read();
-            data[y][x] = c - '0'; // convert char to int
+    int y = 0, x = 0;
+    while (file.available() && y < MAX_HEIGHT) {
+        char c = file.read();
+        
+        // need to skip newline chars or coordinates ruined
+        if (c == '\n') {
+            if (x == 0) {
+                continue;
+            }
+        }
+
+        if (c >= '0' && c <= '3') {
+            data[y][x] = c - '0'; // char to int conversion
+            ++x;
+
+            // move to next row
+            if (x == MAX_WIDTH) {
+                x = 0;
+                ++y;
+            }
         }
     }
 
     file.close();
     // printing
-//    for (const auto& row : data) {
-//        for (bool pixel : row) {
-//            Serial.printf("%d", pixel);
-//        }
-//        Serial.printf("\n");
-//    }
+    for (const auto& row : data) {
+        for (bool pixel : row) {
+            Serial.printf("%d", pixel);
+        }
+        Serial.printf("\n");
+    }
     return true;
 }
 
