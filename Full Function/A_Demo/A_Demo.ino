@@ -214,7 +214,7 @@ void setup() {
       Bitmap bmp;
       Astar astar;
       DEBUG_PRINTLN("1");
-      Map = SD.open("/Map.bin", FILE_READ);
+      Map = SD.open("/testMap.bin", FILE_READ);
       bmp.read(Map);
       Map.close();
       DEBUG_PRINTLN("2: bmp.removeEmptyRowsAndColumns");
