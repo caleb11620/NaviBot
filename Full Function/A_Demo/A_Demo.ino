@@ -13,6 +13,7 @@
 // ASTAR
 #include "Astar.h"
 #include "Bitmap.h"
+#include <tuple>
 
 struct outcome {
   Turn turn;
@@ -243,9 +244,12 @@ void setup() {
 
       std::vector<Node*> path = astar.algorithm(start, Goal);
       DEBUG_PRINTLN("path returned");
+      DEBUG_PRINTF("path size: %d\n", path.size());
+      DEBUG_PRINTF("path[0]: (x,y): %d,%d\n",path[0]->x,path[0]->y);
+      DEBUG_PRINTF("path[1]: (x,y): %d,%d\n",path[1]->x,path[1]->y);
       printMemoryStats();
-      Heading head = Heading::N;
-      Heading newHeading;
+      Heading head = Heading::N; // assuming the bot begins facing 'N'
+      Heading newHeading = head;
       DEBUG_PRINTLN("entering forloop");
       for (int i = 0; i < path.size()-1; ++i) {
         DEBUG_PRINTLN("be4 auto");
@@ -285,6 +289,8 @@ void setup() {
 }
 
 void loop() {
+  if (readDIP() != program)
+    ESP.restart();
   switch (program) {
     case 0:
       RightWallFollow();
