@@ -40,6 +40,25 @@ void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
     aWidth = bmp[0].size();
     aHeight = bmp.size();
 
+    try {
+        bool hasStart, hasGoal;
+        for (int y = 0; y < bmp.size(); ++y) {
+            for (int x = 0; x < bmp[y].size(); ++x) {
+                if (bmp[y][x] == 2) {
+                    hasStart = true;
+                } else if (bmp[y][x] == 3) {
+                    hasGoal = true;
+                }
+            }
+        }
+        if (!hasStart)
+            throw std::runtime_error("No start node found");
+        if (!hasGoal)
+            throw std::runtime_error("No goal node found");
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << '\n';
+        std::terminate();
+    }
     // Create nodes only for non-obstacle cells
     for (int y = 0; y < aHeight; ++y) {
         for (int x = 0; x < aWidth; ++x) {
@@ -246,6 +265,7 @@ Node* Astar::determineStartNode(int inputX, int inputY) {
         return start_node;
     }
     // No valid start found
+    printf("No start found");
     return nullptr;
 }
 
@@ -255,6 +275,7 @@ Node* Astar::determineGoalNode(int exitX, int exitY) {
         return exit_node;
     }
     // No valid goal found
+    printf("No goal found");
     return nullptr;
 }
 
