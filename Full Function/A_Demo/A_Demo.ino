@@ -112,7 +112,7 @@ void RightWallFollow();
 void LeftWallFollow();
 
 // Debug mode: Uncomment/comment following line to toggle DEBUG mode
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
   #define DEBUG_PRINT(...)      Serial.print(__VA_ARGS__)
   #define DEBUG_PRINTLN(...)    Serial.println(__VA_ARGS__)
@@ -231,22 +231,32 @@ void setup() {
       Node* Goal = astar.determineGoalNode();
 
       DEBUG_PRINTLN("map determined start and goal node");
+      DEBUG_PRINTF("start (x,y): %d %d\n", start->x, start->y);
+      DEBUG_PRINTF("end (x,y): %d %d\n", Goal->x, Goal->y);
+
 
       // HEURISTIC TYPES: MANHATTAN, EUCLIDEAN, CHEBYSHEV, OCTILE,
       // MANHATTAN: ONLY 90 DEGREE TURNS
       // EUCLIDEAN, CHEBYSHEV, OCTILE: REQUIRES 45 DEGREE TURNS
       astar.setHeuristicType(HeuristicType::MANHATTAN);
+      DEBUG_PRINTLN("set Heuristic Manhattan");
+
       std::vector<Node*> path = astar.algorithm(start, Goal);
-      
+      DEBUG_PRINTLN("path returned");
       printMemoryStats();
       Heading head = Heading::N;
       Heading newHeading;
+      DEBUG_PRINTLN("entering forloop");
       for (int i = 0; i < path.size()-1; ++i) {
+        DEBUG_PRINTLN("be4 auto");
         auto [direction, angle, newHeading] = astar.calculateSolutionVars(path[i]->x, path[i]->y, path[i+1]->x, path[i+1]->y, head);
         head = newHeading;
+        DEBUG_PRINTLN("be4 outcome");
         outcome val = {direction, angle, 1};
+        DEBUG_PRINTF("outcome vals: direction: %c \t angle: %d \n", static_cast<char>(val.turn), val.angle);
         solution.push_back(val);
       }
+      DEBUG_PRINTLN("solutionVars calculated");
       // when direction is unchanging combine & erase steps by adding 'distance'
       for (int i = 0; i < solution.size()-1; ++i) {
         if (solution[i].turn == Turn::FORWARD && solution[i].turn == solution[i+1].turn) {
@@ -255,6 +265,7 @@ void setup() {
           --i;
         }
       }
+      DEBUG_PRINTLN("consecutive FORWARD vars concatenated");
       astar.cleanup();
       analogWrite(RED, 256);
       analogWrite(GREEN, 100);
