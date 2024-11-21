@@ -1,3 +1,4 @@
+
 #include <SD.h>
 #include <sd_defines.h>
 #include <sd_diskio.h>
@@ -13,7 +14,6 @@
 // ASTAR
 #include "Astar.h"
 #include "Bitmap.h"
-#include <tuple>
 
 struct outcome {
   Turn turn;
@@ -30,17 +30,15 @@ VL53L0X LeftSensor, CenterSensor, RightSensor;
 #define RXSHUT 4
 float leftDistance;
 float rightDistance;
-float center;
+float centerDistance;
 byte leftWall, centerWall, rightWall;
 
-#define followDistance 10
-#define frontWallDistance 6
-#define sideWallDistance 12
+#define followDistance 9
+#define frontThreshold 4.5
 
 //Gyro Initialization
 MPU6050 mpu(Wire);
 float angle;
-#define RightAngleTurn 86
 
 //SD initialization
 
@@ -80,6 +78,11 @@ File MapFiltered;
 
 #define SPEED 60
 
+#define RIGHT_TURN_ANGLE 83
+#define LEFT_TURN_ANGLE 85
+
+#define TURN_DELAY 775
+
 int leftSpeed = 59;
 int rightSpeed = 61;
 int rotationSpeed = 60;
@@ -113,7 +116,7 @@ void RightWallFollow();
 void LeftWallFollow();
 
 // Debug mode: Uncomment/comment following line to toggle DEBUG mode
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
   #define DEBUG_PRINT(...)      Serial.print(__VA_ARGS__)
   #define DEBUG_PRINTLN(...)    Serial.println(__VA_ARGS__)
@@ -128,7 +131,7 @@ void setup() {
   #ifdef DEBUG
     Serial.begin(115200);
     while(!Serial);
-    DEBUG_PRINTLN("Serial initialized");
+    Serial.println("Serial initialized");
   #endif
   Wire.begin();
   initializeDIP();
@@ -145,6 +148,8 @@ void setup() {
       initializeGyro();
       initializeIR();
       initializeSD();
+      memoryLog = SD.open("/Log.txt", FILE_WRITE);
+      memoryLog.close();
       waitForStart();
       enterMaze();
       initializeCounter();
@@ -157,6 +162,8 @@ void setup() {
       initializeGyro();
       initializeIR();
       initializeSD();
+      memoryLog = SD.open("/Log.txt", FILE_WRITE);
+      memoryLog.close();
       waitForStart();
       enterMaze();
       initializeCounter();
@@ -205,7 +212,7 @@ void setup() {
       break;
     }
     case 111: // ASTAR
-    {
+     {
       initializeSD();
       DEBUG_PRINTLN("Init SD passed");
       analogWrite(RED, 100);
@@ -215,7 +222,7 @@ void setup() {
       Bitmap bmp;
       Astar astar;
       DEBUG_PRINTLN("1");
-      Map = SD.open("/testMap.bin", FILE_READ);
+      Map = SD.open("/Map.bin", FILE_READ);
       bmp.read(Map);
       Map.close();
       DEBUG_PRINTLN("2: bmp.removeEmptyRowsAndColumns");
@@ -283,7 +290,7 @@ void setup() {
       DEBUG_PRINTLN("PASS IR");
       waitForStart();
       DEBUG_PRINTLN("PASS WAIT");
-      enterMaze();
+      //enterMaze();
       DEBUG_PRINTLN("PASS ENTER");
       initializeCounter();
       DEBUG_PRINTLN("PASS COUNTER");
@@ -296,8 +303,6 @@ void setup() {
 }
 
 void loop() {
-  if (readDIP() != program)
-    ESP.restart();
   switch (program) {
     case 0:
       RightWallFollow();
@@ -315,43 +320,51 @@ void loop() {
 
     case 111: // ASTAR
     {
-      DEBUG_PRINTLN("In loop() ASTAR");
       for (int i = 0; i < solution.size()-1; i++) {
         // GET DIRECTION
         char runDirection = static_cast<char>(solution[i].turn);
-        DEBUG_PRINTF("run direction: %c\n", runDirection);
+        int runDirectionTemp;
         switch (runDirection) {
           case 'F':
-            runDirection = FWD;
+            runDirectionTemp = FWD;
             break;
           case 'R':
-            runDirection = RIGHT_TURN;
+            runDirectionTemp = RIGHT_TURN;
             break;
           case 'L':
-            runDirection = LEFT_TURN;
+            runDirectionTemp = LEFT_TURN;
             break;
           default:
-            runDirection = FWD;
+            runDirectionTemp = FWD;
             break;
         }
         // GET ANGLE
         int runAngle = solution[i].angle;
         // GET DISTANCE
         int runDistance = solution[i].distance;
+        DEBUG_PRINT(runAngle);
+        DEBUG_PRINT(" ");
+        DEBUG_PRINT(runDirectionTemp);
+        DEBUG_PRINT(" ");
+        DEBUG_PRINTLN(runDistance);
 
-        DEBUG_PRINTF("run angle: %d\n", runAngle);
-        DEBUG_PRINTF("run distance: %d\n", runDistance);
-        if (runDirection != FWD) {
-          turn(runAngle, runDirection);
+        if (runDirectionTemp != FWD) {
+          if (runDirectionTemp == RIGHT_TURN) {
+            turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
+          }
+          if (runDirection == LEFT_TURN) {
+            turn(LEFT_TURN_ANGLE, LEFT_TURN);
+          }
         }
 
         pulseCount = 0;
         while (pulseCount < runDistance) {
           Motor(FWD, 56, 61);
         }
+       }
+      exit(0);
       }
       break;
-    }
     default:
       break;
   }
@@ -451,7 +464,7 @@ void scan() {
   leftDistance = LeftSensor.readRangeContinuousMillimeters() * 0.1;
   //Serial.print(left);
   //Serial.print(',');
-  center = CenterSensor.readRangeContinuousMillimeters() * 0.1;
+  centerDistance= CenterSensor.readRangeContinuousMillimeters() * 0.1;
   //Serial.print(center);
   //Serial.print(',');
   rightDistance = RightSensor.readRangeContinuousMillimeters() * 0.1;
@@ -461,7 +474,7 @@ void scan() {
 
 void waitForStart() {
   scan();
-  while (center > 4) {
+  while (centerDistance> 4) {
     scan();
   }
   int RGB[3];
@@ -537,7 +550,7 @@ void Motor(int command, int leftspeed, int rightspeed) {
 
 long location;
 long calcLoc(float x_loc, float y_loc) {
-  location = ceil(x_loc) + (ceil(y_loc) * 400);
+  location = ceil(x_loc) + (ceil(y_loc) * 401);
   if (location < 0) {
     location = location * -1;
   }
@@ -547,13 +560,13 @@ long calcLoc(float x_loc, float y_loc) {
 void initializeGrid() {
   Map = SD.open("/Map.bin", FILE_WRITE);
   if (Map) {
-    for (int i = 0; i < 399; i++) {
-      for (int j = 0; j < 399; j++) {
+    for (int i = 0; i < 400; i++) {
+      for (int j = 0; j < 400; j++) {
         Map.print('1');
       }
       Map.print('\n');
     }
-    Map.seek(calcLoc(199, 199));
+    Map.seek(calcLoc(49, 199));
     Map.print('0');
   }
   Map.close();
@@ -561,7 +574,7 @@ void initializeGrid() {
 
 void enterMaze() {
   scan();
-  while (center > 4.75) {
+  while (centerDistance > frontThreshold) {
     scan();
     Motor(FWD, 58, 61);
     MemoryLog(true);
@@ -570,31 +583,31 @@ void enterMaze() {
   //Now we can initialize the grid and start point
   scan();
   if (program == 0) {
-    turn(86, LEFT_TURN);
+    turn(LEFT_TURN_ANGLE, LEFT_TURN);
   } else if (program == 1) {
-    turn(86, RIGHT_TURN);
+    turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
   }
   pulseCount = 0;
 }
 
 void RightWallFollow() {
   scan();
-  if (center < 5) {
-    turn(87, LEFT_TURN);
+  if (centerDistance< frontThreshold) {
+    turn(LEFT_TURN_ANGLE, LEFT_TURN);
     pulseCount = 0;
   } else if (rightDistance >= 20) {
     Motor(FWD, 56, 61);
-    if (center < 22) {
-      while (center > 5) {
+    if (centerDistance< 22) {
+      while (centerDistance> frontThreshold) {
         Motor(FWD, 56, 61);
         scan();
         MemoryLog(true);
       }
     } else {
-      delay(900);
+      delay(TURN_DELAY);
       MemoryLog(true);
     }
-    turn(85, RIGHT_TURN);
+    turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
     pulseCount = 0;
   } else if (rightDistance < 13) {
     computePD();
@@ -605,22 +618,22 @@ void RightWallFollow() {
 
 void LeftWallFollow() {
   scan();
-  if (center < 5) {
-    turn(83, RIGHT_TURN);
+  if (centerDistance < frontThreshold) {
+    turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
     pulseCount = 0;
   } else if (leftDistance >= 20) {
     Motor(FWD, 56, 61);
-    if (center < 22) {
-      while (center > 5) {
+    if (centerDistance < 22) {
+      while (centerDistance > frontThreshold) {
         Motor(FWD, 56, 61);
         scan();
         MemoryLog(true);
       }
     } else {
-      delay(900);
+      delay(TURN_DELAY);
       MemoryLog(true);
     }
-    turn(87, LEFT_TURN);
+    turn(LEFT_TURN_ANGLE, LEFT_TURN);
     pulseCount = 0;
   } else if (leftDistance < 13) {
     computePD();
@@ -662,7 +675,7 @@ void computePD() {
   scan();
   if (program == 0) {
     if (rightDistance < 20) {
-      error = rightDistance - 9;
+      error = rightDistance - followDistance;
       error_dt = error - prev_error;
       if(error_dt < 3) {
         integral += error;
@@ -675,7 +688,7 @@ void computePD() {
 
   } else {
     if (leftDistance < 20) {
-      error = leftDistance - 9;
+      error = leftDistance - followDistance;
       error_dt = error - prev_error;
       if(error_dt < 3) {
         integral += error;
@@ -692,7 +705,7 @@ void MemoryLog(bool includeEncoder) {
   memoryLog = SD.open("/Log.txt", FILE_APPEND);
   memoryLog.print(leftDistance);
   memoryLog.print(' ');
-  memoryLog.print(center);
+  memoryLog.print(centerDistance);
   memoryLog.print(' ');
   memoryLog.print(rightDistance);
   memoryLog.print(' ');
@@ -730,9 +743,9 @@ void Map_Update(int Lsensor, int Csensor, int Rsensor, float angle, int distance
   if(Csensor > 4) {Csensor = 4;}
   if(Lsensor > 4) {Lsensor = 4;}
   if(Rsensor > 4) {Rsensor = 4;}
-  Map_IR(1, Lsensor, angle);
-  Map_IR(2, Csensor, angle);
-  Map_IR(3, Rsensor, angle);
+  //Map_IR(1, Lsensor, angle);
+  //Map_IR(2, Csensor, angle);
+  //Map_IR(3, Rsensor, angle);
   Map_Move(distance*2, angle);
 }
 
@@ -765,6 +778,8 @@ void Map_IR(int sensor, int distance, float angle) {
 float MapData[5];
 void Make_A_Map() {
   initializeGrid();
+  int start_x = x;
+  int start_y = y;
   memoryLog = SD.open("/Log.txt", FILE_READ);
   String s;
   int i = 0;
@@ -787,8 +802,14 @@ void Make_A_Map() {
     }
   }
   memoryLog.close();
+  int end_x = x;
+  int end_y = y;
+  Map = SD.open("/Map.bin", "r+");
+  Map.seek(calcLoc(start_x, start_y));
+  Map.print('2');
+  Map.seek(calcLoc(end_x, end_y));
+  Map.print('3');
   Map.close();
-  //erode();
 }
 
 void initializeCounter() {
