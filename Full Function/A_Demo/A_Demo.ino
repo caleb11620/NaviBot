@@ -1,4 +1,4 @@
-
+#include "debug_macros.h"
 #include <SD.h>
 #include <sd_defines.h>
 #include <sd_diskio.h>
@@ -14,6 +14,7 @@
 // ASTAR
 #include "Astar.h"
 #include "Bitmap.h"
+#include <tuple>
 
 struct outcome {
   Turn turn;
@@ -114,18 +115,6 @@ void Make_A_Map();
 void Motor(int command, int leftspeed, int rightspeed);
 void RightWallFollow();
 void LeftWallFollow();
-
-// Debug mode: Uncomment/comment following line to toggle DEBUG mode
-//#define DEBUG
-#ifdef DEBUG
-  #define DEBUG_PRINT(...)      Serial.print(__VA_ARGS__)
-  #define DEBUG_PRINTLN(...)    Serial.println(__VA_ARGS__)
-  #define DEBUG_PRINTF(...)     Serial.printf(__VA_ARGS__)
-#else
-  #define DEBUG_PRINT(...)
-  #define DEBUG_PRINTLN(...)
-  #define DEBUG_PRINTF(...)
-#endif
 
 void setup() {
   #ifdef DEBUG
