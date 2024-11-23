@@ -6,6 +6,8 @@
 #include <cmath>
 #include <fstream>
 #include "Arduino.h"
+#include "debug_macros.h"
+
 
 // constructor
 // aWidth and aHeight init 0
@@ -34,8 +36,8 @@ Node* Astar::getNode(int x, int y) const {
 }
 
 void Astar::interpretBitmap(const std::vector<std::vector<int>>& bmp) {
-    printf("AStar::Interpreting bitmap...\n");
-    printf("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
+    DEBUG_PRINTF("AStar::Interpreting bitmap...\n");
+    DEBUG_PRINTF("Bitmap width: %d, height: %d\n", bmp[0].size(), bmp.size());
 
     cleanup();
     aWidth = bmp[0].size();

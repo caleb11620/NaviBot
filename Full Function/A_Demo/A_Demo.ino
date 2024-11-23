@@ -1,4 +1,4 @@
-#include "debug_macros.h"
+
 #include <SD.h>
 #include <sd_defines.h>
 #include <sd_diskio.h>
@@ -14,7 +14,7 @@
 // ASTAR
 #include "Astar.h"
 #include "Bitmap.h"
-#include <tuple>
+#include "debug_macros.h"
 
 struct outcome {
   Turn turn;
@@ -80,7 +80,7 @@ File MapFiltered;
 #define SPEED 60
 
 #define RIGHT_TURN_ANGLE 83
-#define LEFT_TURN_ANGLE 85
+#define LEFT_TURN_ANGLE 83
 
 #define TURN_DELAY 775
 
@@ -97,8 +97,14 @@ int rotationSpeed = 60;
 TaskHandle_t Task1;
 const int led1 = 2;
 #define PULSE_INPUT_PIN D5
-volatile unsigned int pulseCount = 0;
+unsigned int pulseCount = 0;
 int program;
+
+float error, error_dt, integral, outputD;
+float prev_error = 0;
+float P = 2;
+float D = 4;
+float I = 0;
 
 // Function Prototypes
 void initializeDIP();
@@ -268,21 +274,21 @@ void setup() {
       DEBUG_PRINTLN("consecutive FORWARD vars concatenated");
       astar.cleanup();
       DEBUG_PRINTLN("PASS CLEANUP");
-      analogWrite(RED, 256);
-      analogWrite(GREEN, 100);
-      analogWrite(BLUE, 256);
       initializeMotor();
       DEBUG_PRINTLN("PASS MOTOR");
       initializeGyro();
       DEBUG_PRINTLN("PASS GYRO");
       initializeIR(); 
       DEBUG_PRINTLN("PASS IR");
-      waitForStart();
-      DEBUG_PRINTLN("PASS WAIT");
-      //enterMaze();
-      DEBUG_PRINTLN("PASS ENTER");
+//      waitForStart();
+//      DEBUG_PRINTLN("PASS WAIT");
+//      enterMaze();
+//      DEBUG_PRINTLN("PASS ENTER");
       initializeCounter();
       DEBUG_PRINTLN("PASS COUNTER");
+      analogWrite(RED, 256);
+      analogWrite(GREEN, 100);
+      analogWrite(BLUE, 256);
       break;
     }
 
@@ -312,48 +318,58 @@ void loop() {
       for (int i = 0; i < solution.size()-1; i++) {
         // GET DIRECTION
         char runDirection = static_cast<char>(solution[i].turn);
-        int runDirectionTemp;
+        int runAngle = solution[i].angle;
+        int runDistance = solution[i].distance;
+        DEBUG_PRINT(runDirection);
+        DEBUG_PRINT(' ');
+        DEBUG_PRINT(runAngle);
+        DEBUG_PRINT(' ');
+        DEBUG_PRINTLN(runDistance);
+        if(runDistance > 15) {
+          runDistance = round(runDistance*0.55);
+        } else {
+          runDistance = runDistance - 4;
+        }
+        pulseCount = 0;
         switch (runDirection) {
           case 'F':
-            runDirectionTemp = FWD;
+            while (pulseCount < runDistance) {
+              scan();
+              DEBUG_PRINTLN(pulseCount);
+              if(centerDistance < frontThreshold) {break;}
+              if (rightDistance < 13) {
+                  error = rightDistance - followDistance;
+                  error_dt = error - prev_error;
+                  if(error_dt < 5) {
+                  integral += error;
+                  outputD = P * error + D * error_dt + I * integral;
+                  leftSpeed = SPEED + outputD;
+                  rightSpeed = SPEED - outputD;       
+                  }
+              prev_error = error;
+              Motor(FWD, leftSpeed, rightSpeed);
+             } else {
+              Motor(FWD, 56, 61);
+             }
+            }
             break;
           case 'R':
-            runDirectionTemp = RIGHT_TURN;
+            turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
+            pulseCount = 0;
             break;
           case 'L':
-            runDirectionTemp = LEFT_TURN;
-            break;
-          default:
-            runDirectionTemp = FWD;
-            break;
-        }
-        // GET ANGLE
-        int runAngle = solution[i].angle;
-        // GET DISTANCE
-        int runDistance = solution[i].distance;
-        DEBUG_PRINT(runAngle);
-        DEBUG_PRINT(" ");
-        DEBUG_PRINT(runDirectionTemp);
-        DEBUG_PRINT(" ");
-        DEBUG_PRINTLN(runDistance);
-
-        if (runDirectionTemp != FWD) {
-          if (runDirectionTemp == RIGHT_TURN) {
-            turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
-          }
-          if (runDirection == LEFT_TURN) {
             turn(LEFT_TURN_ANGLE, LEFT_TURN);
-          }
-        }
-
-        pulseCount = 0;
-        while (pulseCount < runDistance) {
-          Motor(FWD, 56, 61);
+            pulseCount = 0;
+            break;
+            
+          default:
+            break;
         }
        }
       exit(0);
       }
       break;
+      
     default:
       break;
   }
@@ -653,12 +669,6 @@ void turn(int turnAngle, int turnDirection) {
   }
   Motor(STOP, 0, 0);  // Stop the motor once the turn is complete
 }
-
-float error, error_dt, integral, outputD;
-float prev_error = 0;
-float P = 2;
-float D = 4;
-float I = 0;
 
 void computePD() {
   scan();

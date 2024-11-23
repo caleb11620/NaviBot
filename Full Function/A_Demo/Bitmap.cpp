@@ -1,5 +1,7 @@
 #include "Bitmap.h"
 #include "Arduino.h"
+#include "debug_macros.h"
+
 
 // constructor
 Bitmap::Bitmap() : data(MAX_HEIGHT, std::vector<int>(MAX_WIDTH, 0)) {}
@@ -79,7 +81,6 @@ void Bitmap::invertPixel(int x, int y)
 }
 
 std::vector<int> Bitmap::findEmptyRows() {
-    int count{0};
     std::vector<int> rowsToRemove(MAX_HEIGHT, 0);
     for (int y = 0; y < MAX_HEIGHT; ++y) {
         bool allZeros = true;
@@ -96,16 +97,14 @@ std::vector<int> Bitmap::findEmptyRows() {
         }
         
         if (allZeros || allOnes) {
-            count++;
+            DEBUG_PRINTF("Found a row to remove\n");
             rowsToRemove[y] = 1;
         }
     }
-    DEBUG_PRINTF("Removing %d rows\n", count);
     return rowsToRemove;
 }
 
 std::vector<int> Bitmap::findEmptyCols() {
-    int count {0};
     std::vector<int> colsToRemove(MAX_WIDTH, 0);
     for (int x = 0; x < MAX_WIDTH; ++x) {
         bool allZeros = true;
@@ -122,11 +121,10 @@ std::vector<int> Bitmap::findEmptyCols() {
         }
         
         if (allZeros || allOnes) {
-            count++;
+            DEBUG_PRINTF("Found a column to remove\n");
             colsToRemove[x] = 1;
         }
     }
-    DEBUG_PRINTF("Removing %d columns\n", count);
     return colsToRemove;
 }
 
@@ -158,10 +156,4 @@ void Bitmap::removeEmptyRowsAndColumns() {
     intHeight = data.size();
     intWidth = data.empty() ? 0 : data[0].size();
     DEBUG_PRINTF("intHeight: %d, intWidth: %d\n", intHeight, intWidth);
-    for (const auto& row : data) {
-        for (bool pixel : row) {
-            DEBUG_PRINTF("%d", pixel);
-        }
-        DEBUG_PRINTF("\n");
-    }
 }
