@@ -78,10 +78,15 @@ File MapFiltered;
 
 #define SPEED 60
 
-#define RIGHT_TURN_ANGLE 83
-#define LEFT_TURN_ANGLE 83
+#define RIGHT_TURN_ANGLE 81
+#define LEFT_TURN_ANGLE 85
 
 #define TURN_DELAY 775
+#define PASS_LENGTH 10
+#define FRONT_CHECK_DISTANCE 20
+#define FOLLOW_THRESHOLD 20
+#define ERROR_DT_THRESHOLD 3
+#define ENCODER_MULT 1.3
 
 int leftSpeed = 59;
 int rightSpeed = 61;
@@ -279,10 +284,10 @@ void setup() {
       DEBUG_PRINTLN("PASS GYRO");
       initializeIR(); 
       DEBUG_PRINTLN("PASS IR");
-//      waitForStart();
-//      DEBUG_PRINTLN("PASS WAIT");
-//      enterMaze();
-//      DEBUG_PRINTLN("PASS ENTER");
+      waitForStart();
+      DEBUG_PRINTLN("PASS WAIT");
+      enterMaze();
+      DEBUG_PRINTLN("PASS ENTER");
       initializeCounter();
       DEBUG_PRINTLN("PASS COUNTER");
       analogWrite(RED, 256);
@@ -318,17 +323,17 @@ void loop() {
         // GET DIRECTION
         char runDirection = static_cast<char>(solution[i].turn);
         int runAngle = solution[i].angle;
-        int runDistance = solution[i].distance;
+        int runDistance = solution[i].distance * ENCODER_MULT;
         DEBUG_PRINT(runDirection);
         DEBUG_PRINT(' ');
         DEBUG_PRINT(runAngle);
         DEBUG_PRINT(' ');
         DEBUG_PRINTLN(runDistance);
-        if(runDistance > 15) {
-          runDistance = round(runDistance*0.55);
-        } else {
-          runDistance = runDistance - 4;
-        }
+//        if(runDistance > 15) {
+//          runDistance = round(runDistance*0.55);
+//        } else {
+//          runDistance = runDistance - 4;
+//        }
         pulseCount = 0;
         switch (runDirection) {
           case 'F':
@@ -336,7 +341,7 @@ void loop() {
               scan();
               DEBUG_PRINTLN(pulseCount);
               if(centerDistance < frontThreshold) {break;}
-              if (rightDistance < 13) {
+              if (rightDistance < 15) {
                   error = rightDistance - followDistance;
                   error_dt = error - prev_error;
                   if(error_dt < 5) {
@@ -347,8 +352,20 @@ void loop() {
                   }
               prev_error = error;
               Motor(FWD, leftSpeed, rightSpeed);
+             } 
+              else if (leftDistance < 15){
+                error = leftDistance - followDistance;
+                error_dt = error - prev_error;
+                if(error_dt < ERROR_DT_THRESHOLD) {
+                  integral += error;
+                  outputD = P * error + D * error_dt + I * integral;
+                  leftSpeed = SPEED - outputD;
+                  rightSpeed = SPEED + outputD;
+                }
+                prev_error = error;
+                Motor(FWD, leftSpeed, rightSpeed);
              } else {
-              Motor(FWD, 56, 61);
+              Motor(FWD, 56, 58);
              }
             }
             break;
@@ -465,7 +482,7 @@ void scan() {
   //Serial.print(angle);
   //Serial.print(',');
 
-  leftDistance = LeftSensor.readRangeContinuousMillimeters() * 0.1;
+  leftDistance = (LeftSensor.readRangeContinuousMillimeters() * 0.1) + 1;
   //Serial.print(left);
   //Serial.print(',');
   centerDistance= CenterSensor.readRangeContinuousMillimeters() * 0.1;
@@ -596,24 +613,27 @@ void enterMaze() {
 
 void RightWallFollow() {
   scan();
-  if (centerDistance< frontThreshold) {
+  if (centerDistance < frontThreshold) {
     turn(LEFT_TURN_ANGLE, LEFT_TURN);
     pulseCount = 0;
   } else if (rightDistance >= 20) {
     Motor(FWD, 56, 61);
-    if (centerDistance< 22) {
-      while (centerDistance> frontThreshold) {
+    if (centerDistance < FRONT_CHECK_DISTANCE) {
+      while (centerDistance > frontThreshold) {
         Motor(FWD, 56, 61);
         scan();
         MemoryLog(true);
       }
     } else {
-      delay(TURN_DELAY);
+      while(pulseCount < PASS_LENGTH) {
+        scan();
+        if(centerDistance < frontThreshold) {break;}
+      }
       MemoryLog(true);
     }
     turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
     pulseCount = 0;
-  } else if (rightDistance < 13) {
+  } else if (rightDistance < FOLLOW_THRESHOLD) {
     computePD();
     Motor(FWD, leftSpeed, rightSpeed);
     MemoryLog(true);
@@ -627,19 +647,23 @@ void LeftWallFollow() {
     pulseCount = 0;
   } else if (leftDistance >= 20) {
     Motor(FWD, 56, 61);
-    if (centerDistance < 22) {
+    if (centerDistance < FRONT_CHECK_DISTANCE) {
       while (centerDistance > frontThreshold) {
         Motor(FWD, 56, 61);
         scan();
         MemoryLog(true);
       }
     } else {
-      delay(TURN_DELAY);
+      pulseCount = 0;
+      while(pulseCount < PASS_LENGTH) {
+        scan();
+        if(centerDistance < frontThreshold) {break;}
+      }
       MemoryLog(true);
     }
     turn(LEFT_TURN_ANGLE, LEFT_TURN);
     pulseCount = 0;
-  } else if (leftDistance < 13) {
+  } else if (leftDistance < FOLLOW_THRESHOLD) {
     computePD();
     Motor(FWD, leftSpeed, rightSpeed);
     MemoryLog(true);
@@ -672,30 +696,25 @@ void turn(int turnAngle, int turnDirection) {
 void computePD() {
   scan();
   if (program == 0) {
-    if (rightDistance < 20) {
       error = rightDistance - followDistance;
       error_dt = error - prev_error;
-      if(error_dt < 3) {
+      if(error_dt < ERROR_DT_THRESHOLD) {
         integral += error;
         outputD = P * error + D * error_dt + I * integral;
         leftSpeed = SPEED + outputD;
         rightSpeed = SPEED - outputD;       
       }
       prev_error = error;
-    }
-
   } else {
-    if (leftDistance < 20) {
       error = leftDistance - followDistance;
       error_dt = error - prev_error;
-      if(error_dt < 3) {
+      if(error_dt < ERROR_DT_THRESHOLD) {
         integral += error;
         outputD = P * error + D * error_dt + I * integral;
         leftSpeed = SPEED - outputD;
         rightSpeed = SPEED + outputD;
       }
       prev_error = error;
-    }
   }
 }
 
@@ -738,13 +757,13 @@ float angleCorrection(float angle) {
 
 void Map_Update(int Lsensor, int Csensor, int Rsensor, float angle, int distance) {
   angle = -1*angleCorrection(angle);
-  if(Csensor > 4) {Csensor = 4;}
-  if(Lsensor > 4) {Lsensor = 4;}
-  if(Rsensor > 4) {Rsensor = 4;}
+//  if(Csensor > 2) {Csensor = 4;}
+//  if(Lsensor > 4) {Lsensor = 4;}
+//  if(Rsensor > 4) {Rsensor = 4;}
   //Map_IR(1, Lsensor, angle);
   //Map_IR(2, Csensor, angle);
   //Map_IR(3, Rsensor, angle);
-  Map_Move(distance*2, angle);
+  Map_Move(distance, angle);
 }
 
 void Map_Move(int distance, float angle) {
