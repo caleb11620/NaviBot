@@ -334,44 +334,28 @@ void loop() {
         DEBUG_PRINT(runAngle);
         DEBUG_PRINT(' ');
         DEBUG_PRINTLN(runDistance);
-//        if(runDistance > 15) {
-//          runDistance = round(runDistance*0.55);
-//        } else {
-//          runDistance = runDistance - 4;
-//        }
+        if(runDistance < 15) {
+          runDistance = runDistance + 3;
+        }
         pulseCount = 0;
         switch (runDirection) {
           case 'F':
-            while (pulseCount < runDistance) {
+            while(pulseCount < runDistance) {
               scan();
               DEBUG_PRINTLN(pulseCount);
               if(centerDistance < frontThreshold) {break;}
-              if (rightDistance < 15) {
-                  error = rightDistance - followDistance;
+              if(leftDistance < followThreshold) {
+                  error = leftDistance - followDistance + 2;
                   error_dt = error - prev_error;
-                  if(error_dt < 5) {
-                  integral += error;
-                  outputD = P * error + D * error_dt + I * integral;
-                  leftSpeed = SPEED + outputD;
-                  rightSpeed = SPEED - outputD;       
+                  if(abs(error_dt) < ERROR_DT_THRESHOLD) {
+                    integral += error;
+                    outputD = P * error + D * error_dt + I * integral;
+                    leftSpeed = SPEED - outputD;
+                    rightSpeed = SPEED + outputD;
                   }
-              prev_error = error;
-              Motor(FWD, leftSpeed, rightSpeed);
-             } 
-              else if (leftDistance < 15){
-                error = leftDistance - followDistance;
-                error_dt = error - prev_error;
-                if(error_dt < ERROR_DT_THRESHOLD) {
-                  integral += error;
-                  outputD = P * error + D * error_dt + I * integral;
-                  leftSpeed = SPEED - outputD;
-                  rightSpeed = SPEED + outputD;
+                  prev_error = error;
+                  Motor(FWD, leftSpeed, rightSpeed);
                 }
-                prev_error = error;
-                Motor(FWD, leftSpeed, rightSpeed);
-             } else {
-              Motor(FWD, STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
-             }
             }
             break;
           case 'R':
@@ -765,9 +749,9 @@ void Map_Update(int Lsensor, int Csensor, int Rsensor, float angle, int distance
 //  if(Csensor > 6) {Csensor = 6;}
 //  if(Lsensor > 6) {Lsensor = 6;}
 //  if(Rsensor > 6) {Rsensor = 6;}
-//  Map_IR(1, Lsensor, angle);
-//  Map_IR(2, Csensor, angle);
-//  Map_IR(3, Rsensor, angle);
+//  Map_IR(1, 10, angle);
+//  Map_IR(2, 2, angle);
+//  Map_IR(3, 5, angle);
   Map_Move(distance, angle);
 }
 
