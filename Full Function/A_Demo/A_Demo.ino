@@ -634,26 +634,29 @@ void RightWallFollow() {
     turn(LEFT_TURN_ANGLE, LEFT_TURN);
     pulseCount = 0;
   } else if (rightDistance >= 20) {
-    Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
-    if (centerDistance < FRONT_CHECK_DISTANCE) {
-      while (centerDistance > frontThreshold) {
-        Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
-        scan();
-        MemoryLog(true);
-      }
+    NoLeftWallCount = NoLeftWallCount + 1;
+    if(NoLeftWallCount > 4) {
+      Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
+      scan();
+      if (centerDistance < FRONT_CHECK_DISTANCE) {
+        while (centerDistance > frontThreshold) {
+          Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
+          scan();
+          MemoryLog(true);
+        }
     } else {
-//      while(pulseCount < PASS_LENGTH) {
-//        scan();
-//        if(centerDistance < frontThreshold) {break;}
-//      }
       delay(TURN_DELAY);
       MemoryLog(true);
     }
     turn(RIGHT_TURN_ANGLE, RIGHT_TURN);
     pulseCount = 0;
+    NoLeftWallCount = 0;
+    }
   } else if (rightDistance < FOLLOW_THRESHOLD) {
+    NoLeftWallCount = 0;
+    scan();
     computePD();
-    Motor(FWD, leftSpeed, rightSpeed);
+    if(leftSpeed < 90 and rightSpeed < 90 and abs(error_dt) < 3 and rightDistance < FOLLOW_THRESHOLD) {Motor(FWD, leftSpeed, rightSpeed);}
     MemoryLog(true);
   }
 }
