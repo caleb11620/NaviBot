@@ -301,6 +301,17 @@ void setup() {
       break;
     }
 
+      case 101:
+      {
+        initializeMotor();
+        initializeGyro();
+        initializeIR();
+        initializeSD();
+        waitForStart();
+        enterMaze();
+      }
+      break;
+
     default:
       break;
   }
@@ -328,17 +339,20 @@ void loop() {
         // GET DIRECTION
         char runDirection = static_cast<char>(solution[i].turn);
         int runAngle = solution[i].angle;
-        int runDistance = solution[i].distance * ENCODER_MULT;
+        int runDistance = solution[i].distance;
         DEBUG_PRINT(runDirection);
         DEBUG_PRINT(' ');
         DEBUG_PRINT(runAngle);
         DEBUG_PRINT(' ');
         DEBUG_PRINTLN(runDistance);
+        if(runDistance < 13) {
+          runDistance = runDistance + 4;
+        }
         pulseCount = 0;
         switch (runDirection) {
           case 'F':
+            Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
             while(pulseCount < runDistance) {
-              Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
               scan();
               DEBUG_PRINTLN(pulseCount);
               if(centerDistance < frontThreshold) {break;}
@@ -372,6 +386,22 @@ void loop() {
       exit(0);
       }
       break;
+
+    case 101: 
+    {
+     scan();
+     while(centerDistance > frontThreshold) {
+      scan();
+      Motor(FWD,STRAIGHT_WALL_LEFT,STRAIGHT_WALL_RIGHT);
+      if(leftDistance < 16) {
+        turn(15, RIGHT_TURN);
+      }
+      if (rightDistance < 16) {
+        turn(15, RIGHT_TURN);
+      }
+     }
+     turn(30, RIGHT_TURN);
+    }
       
     default:
       break;
