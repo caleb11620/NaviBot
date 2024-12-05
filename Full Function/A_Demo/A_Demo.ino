@@ -334,17 +334,15 @@ void loop() {
         DEBUG_PRINT(runAngle);
         DEBUG_PRINT(' ');
         DEBUG_PRINTLN(runDistance);
-        if(runDistance < 15) {
-          runDistance = runDistance + 3;
-        }
         pulseCount = 0;
         switch (runDirection) {
           case 'F':
             while(pulseCount < runDistance) {
+              Motor(FWD,STRAIGHT_WALL_LEFT, STRAIGHT_WALL_RIGHT);
               scan();
               DEBUG_PRINTLN(pulseCount);
               if(centerDistance < frontThreshold) {break;}
-              if(leftDistance < followThreshold) {
+              if(leftDistance < FOLLOW_THRESHOLD) {
                   error = leftDistance - followDistance + 2;
                   error_dt = error - prev_error;
                   if(abs(error_dt) < ERROR_DT_THRESHOLD) {
